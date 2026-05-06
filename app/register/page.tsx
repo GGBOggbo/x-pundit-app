@@ -23,7 +23,6 @@ export default function RegisterPage() {
     setLoading(true);
 
     try {
-      // 1. 注册
       const regRes = await fetch("/api/auth/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -36,7 +35,6 @@ export default function RegisterPage() {
         return;
       }
 
-      // 2. 自动登录
       const result = await signIn("credentials", {
         email,
         password,
@@ -44,15 +42,12 @@ export default function RegisterPage() {
       });
 
       if (result?.error) {
-        // 注册成功但自动登录失败，手动跳转登录页
         window.location.href = "/login";
         return;
       }
 
-      // 3. 迁移 localStorage
       await migrateOldHistory();
 
-      // 4. 跳转主页
       window.location.href = "/";
     } catch {
       setError("注册失败，请重试");
@@ -64,15 +59,20 @@ export default function RegisterPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">💬</div>
-        <h1 className="auth-title">注册</h1>
-        <p className="auth-subtitle">创建账号，保存你的评论历史</p>
+        {/* 品牌区 */}
+        <div className="auth-brand">
+          <div className="auth-logo">💬</div>
+          <div className="auth-brand-text">
+            <h1 className="auth-title">创建账号</h1>
+            <p className="auth-subtitle">注册后可保存评论历史，多设备同步</p>
+          </div>
+        </div>
 
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">邮箱</label>
+            <label className="auth-label">邮箱地址</label>
             <input
               type="email"
               value={email}
@@ -101,7 +101,7 @@ export default function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               className="auth-input"
-              placeholder="再输入一次"
+              placeholder="再输入一次密码"
               required
               minLength={8}
             />
@@ -110,18 +110,21 @@ export default function RegisterPage() {
             type="submit"
             className="btn-generate"
             disabled={loading}
-            style={{ marginTop: 16 }}
+            style={{ marginTop: 8, height: 48 }}
           >
-            {loading ? "⏳ 注册中..." : "🚀 注册"}
+            {loading ? "⏳ 注册中..." : "注册"}
           </button>
         </form>
 
-        <div className="auth-footer">
-          已有账号？{" "}
-          <a href="/login" className="auth-link">
-            登录
-          </a>
+        <div className="auth-divider">
+          <span>已有账号？</span>
         </div>
+
+        <a href="/login" className="auth-alt-btn">
+          去登录
+        </a>
+
+        <a href="/" className="auth-back-home">← 返回首页</a>
       </div>
     </div>
   );

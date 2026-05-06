@@ -27,10 +27,8 @@ export default function LoginPage() {
         return;
       }
 
-      // 登录成功，迁移 localStorage
       await migrateOldHistory();
 
-      // 跳转
       const params = new URLSearchParams(window.location.search);
       const redirect = params.get("redirect") || "/";
       window.location.href = redirect;
@@ -44,15 +42,20 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-card">
-        <div className="auth-logo">💬</div>
-        <h1 className="auth-title">登录</h1>
-        <p className="auth-subtitle">登录后可保存历史记录</p>
+        {/* 品牌区 */}
+        <div className="auth-brand">
+          <div className="auth-logo">💬</div>
+          <div className="auth-brand-text">
+            <h1 className="auth-title">欢迎回来</h1>
+            <p className="auth-subtitle">登录你的账号，继续生成精彩评论</p>
+          </div>
+        </div>
 
         {error && <div className="auth-error">{error}</div>}
 
         <form onSubmit={handleSubmit} className="auth-form">
           <div className="auth-field">
-            <label className="auth-label">邮箱</label>
+            <label className="auth-label">邮箱地址</label>
             <input
               type="email"
               value={email}
@@ -78,24 +81,26 @@ export default function LoginPage() {
             type="submit"
             className="btn-generate"
             disabled={loading}
-            style={{ marginTop: 16 }}
+            style={{ marginTop: 8, height: 48 }}
           >
-            {loading ? "⏳ 登录中..." : "🔑 登录"}
+            {loading ? "⏳ 登录中..." : "登录"}
           </button>
         </form>
 
-        <div className="auth-footer">
-          没有账号？{" "}
-          <a href="/register" className="auth-link">
-            注册
-          </a>
+        <div className="auth-divider">
+          <span>还没有账号？</span>
         </div>
+
+        <a href="/register" className="auth-alt-btn">
+          创建新账号
+        </a>
+
+        <a href="/" className="auth-back-home">← 返回首页</a>
       </div>
     </div>
   );
 }
 
-// 迁移 localStorage 旧数据到后端
 async function migrateOldHistory() {
   try {
     const localItems = getLocalHistory();
