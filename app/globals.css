@@ -33,13 +33,13 @@
 /* ─── Base ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-button { font-family: inherit; cursor: pointer; transition: opacity .15s, border-color .15s; }
+button { font-family: inherit; cursor: pointer; transition: opacity .15s, background-color .15s, border-color .15s; }
 
 /* ─── Page Wrapper ─── */
 .page {
-  max-width: 1280px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 32px;
+  padding: 32px 40px;
 }
 
 /* ═══════ HEADER ═══════ */
@@ -47,20 +47,22 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, border
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border-normal);
 }
 .header-left { display: flex; align-items: center; gap: 14px; }
 
 .logo {
-  width: 50px; height: 50px;
-  background: linear-gradient(135deg, var(--purple), var(--blue));
-  border-radius: 14px;
+  width: 44px; height: 44px;
+  background: var(--blue);
+  border-radius: 10px;
   display: grid; place-items: center;
-  font-size: 22px;
+  color: #FFFFFF;
   flex-shrink: 0;
 }
-.header-titles h1 { font-size: 32px; font-weight: 700; }
-.header-titles p  { font-size: 15px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
+.header-titles h1 { font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.header-titles p  { font-size: 14px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
 
 .header-right { display: flex; align-items: center; gap: 10px; }
 
@@ -69,30 +71,30 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, border
   background: transparent;
   border: 1px solid var(--border-normal);
   color: var(--text-body);
-  padding: 9px 16px;
+  padding: 8px 16px;
   border-radius: var(--radius-btn);
   font-size: 14px;
   display: inline-flex; align-items: center; gap: 6px;
   white-space: nowrap;
 }
-.btn-ghost:hover { border-color: var(--border-hi); color: var(--text-primary); }
-.btn-ghost .highlight { color: var(--purple); font-weight: 700; font-size: 16px; }
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--border-hi); }
+.btn-ghost .highlight { color: var(--blue); font-weight: 700; font-size: 16px; }
 
 .btn-primary {
-  background: linear-gradient(135deg, var(--purple), var(--blue));
+  background: var(--blue);
   border: none;
-  color: var(--text-primary);
-  padding: 9px 22px;
+  color: #FFFFFF;
+  padding: 8px 20px;
   border-radius: var(--radius-btn);
   font-size: 14px; font-weight: 600;
   display: inline-flex; align-items: center; gap: 6px;
 }
-.btn-primary:hover { opacity: .88; }
+.btn-primary:hover { background: #1D4ED8; }
 
 /* ═══════ TWO-COLUMN LAYOUT ═══════ */
 .main {
   display: grid;
-  grid-template-columns: 40% 1fr;
+  grid-template-columns: 400px 1fr;
   gap: 32px;
   align-items: start;
 }
@@ -102,18 +104,19 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, border
   background: var(--bg-card);
   border: 1px solid var(--border-normal);
   border-radius: var(--radius-card);
-  padding: 20px;
+  padding: 24px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
 
 /* ─── Step Label ─── */
-.step-row { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; }
+.step-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .step-badge {
-  background: var(--border-normal);
-  color: var(--border-hi);
+  background: #EFF6FF;
+  color: var(--blue);
   font-size: 10px; font-weight: 700;
-  padding: 3px 8px; border-radius: 5px; letter-spacing: .6px;
+  padding: 3px 8px; border-radius: 4px; letter-spacing: .6px;
 }
-.step-name { font-size: 14px; font-weight: 600; }
+.step-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
 
 /* ═══════ LEFT PANEL ═══════ */
 .left-panel { display: flex; flex-direction: column; gap: 16px; }
