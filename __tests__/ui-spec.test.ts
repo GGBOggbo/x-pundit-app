@@ -7,21 +7,21 @@ import { personas } from "@/config/personas";
 
 // ========== 1. Design Tokens 颜色测试 ==========
 
-describe("design tokens match reference HTML", () => {
+describe("design tokens match Modern Technical Doc style", () => {
   const tokens = {
-    bgPage: "#050816",
-    bgCard: "#0F172A",
-    bgSecondary: "#111827",
-    borderNormal: "#1F2937",
-    borderHi: "#6366F1",
+    bgPage: "#FFFFFF",
+    bgCard: "#FFFFFF",
+    bgSecondary: "#F8FAFC",
+    borderNormal: "#E2E8F0",
+    borderHi: "#2563EB",
     purple: "#7C3AED",
     blue: "#2563EB",
-    textPrimary: "#F8FAFC",
-    textBody: "#CBD5E1",
-    textMuted: "#64748B",
-    textPlaceholder: "#475569",
-    success: "#22C55E",
-    warning: "#F59E0B",
+    textPrimary: "#1F2937",
+    textBody: "#475569",
+    textMuted: "#94A3B8",
+    textPlaceholder: "#CBD5E1",
+    success: "#16A34A",
+    warning: "#D97706",
   };
 
   it("all tokens should be valid 6-digit hex", () => {
@@ -30,18 +30,21 @@ describe("design tokens match reference HTML", () => {
     });
   });
 
-  it("bgCard should be #0F172A per reference", () => {
-    expect(tokens.bgCard).toBe("#0F172A");
+  it("bgCard should be white (#FFFFFF) per new design", () => {
+    expect(tokens.bgCard).toBe("#FFFFFF");
   });
 
-  it("borderNormal should be #1F2937 per reference", () => {
-    expect(tokens.borderNormal).toBe("#1F2937");
+  it("borderNormal should be slate-200 (#E2E8F0) per new design", () => {
+    expect(tokens.borderNormal).toBe("#E2E8F0");
   });
 
-  it("gradient should use purple (#7C3AED) to blue (#2563EB)", () => {
-    const gradient = "linear-gradient(135deg, #7C3AED, #2563EB)";
-    expect(gradient).toContain("#7C3AED");
-    expect(gradient).toContain("#2563EB");
+  it("textPrimary should be dark (#1F2937) per new design", () => {
+    expect(tokens.textPrimary).toBe("#1F2937");
+  });
+
+  it("accent colors should remain blue (#2563EB) and purple (#7C3AED)", () => {
+    expect(tokens.blue).toBe("#2563EB");
+    expect(tokens.purple).toBe("#7C3AED");
   });
 });
 
