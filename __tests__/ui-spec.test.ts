@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { personas } from "@/config/personas";
 
 /**
  * TDD: 匹配最终设计稿 HTML 参考的测试
@@ -140,27 +141,16 @@ describe("comment card action buttons", () => {
 // ========== 7. Persona cards 测试 ==========
 
 describe("persona card structure", () => {
-  const personas = [
-    { id: "tieba", em: "🍻", name: "贴吧老哥", sub: "直接 / 玩梗 / 冲浪感" },
-    { id: "zhihu", em: "🎓", name: "知乎大V", sub: "理性 / 分析 / 有结论" },
-    { id: "weibo", em: "🔥", name: "微博热评", sub: "共鸣 / 金句 / 情绪强" },
-    { id: "yinyang", em: "🌝", name: "阴阳大师", sub: "反讽 / 话里有话" },
-    { id: "warm", em: "🤗", name: "暖心鼓励", sub: "温柔 / 支持 / 正能量" },
-    { id: "joke", em: "😂", name: "段子手", sub: "幽默 / 神转折" },
-    { id: "tech", em: "💻", name: "Tech Bro", sub: "AI / Startup / Ship it" },
-    { id: "genz", em: "💀", name: "Gen-Z", sub: "短句 / 梗感 / 英文网感" },
-    { id: "hu", em: "🎤", name: "户晨风", sub: "定性 / 品牌论 / 购买力" },
-  ];
-
-  it("should have 9 personas", () => {
+  it("personas config should have 9 entries", () => {
     expect(personas).toHaveLength(9);
   });
 
-  it("each persona should have emoji, name, sub", () => {
+  it("each persona should have emoji, name, description, tags", () => {
     personas.forEach((p) => {
-      expect(p.em.length).toBeGreaterThan(0);
+      expect(p.emoji.length).toBeGreaterThan(0);
       expect(p.name.length).toBeGreaterThan(0);
-      expect(p.sub.length).toBeGreaterThan(0);
+      expect(p.description.length).toBeGreaterThan(0);
+      expect(p.tags.length).toBeGreaterThan(0);
     });
   });
 });

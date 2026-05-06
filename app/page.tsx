@@ -4,30 +4,7 @@ import { useState, useEffect } from "react";
 import { personas } from "@/config/personas";
 import type { GenerateResponse, GeneratedComment, RefineRecord } from "@/types";
 import { createHistoryItem, getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
-
-const personaShortDesc: Record<string, string> = {
-  tieba_bro: "直接 / 玩梗 / 冲浪感",
-  zhihu_expert: "理性 / 分析 / 有结论",
-  weibo_hot: "共鸣 / 金句 / 情绪强",
-  yin_yang: "反讽 / 话里有话",
-  warm_support: "温柔 / 支持 / 正能量",
-  duan_zi: "幽默 / 神转折",
-  tech_bro: "AI / Startup / Ship it",
-  gen_z: "短句 / 梗感 / 英文网感",
-  hu_chenfeng: "定性 / 品牌论 / 购买力",
-};
-
-const personaEmojis: Record<string, string> = {
-  tieba_bro: "🐘",
-  zhihu_expert: "📝",
-  weibo_hot: "🔥",
-  yin_yang: "😏",
-  warm_support: "😊",
-  duan_zi: "😄",
-  tech_bro: "💻",
-  gen_z: "💀",
-  hu_chenfeng: "🎤",
-};
+import PersonaPickerModal from "./components/PersonaPickerModal";
 
 const angleLabels: Record<string, string> = {
   agree: "赞同",
@@ -50,12 +27,13 @@ export default function Home() {
   const [personaId, setPersonaId] = useState("tieba_bro");
   const [count, setCount] = useState(5);
   const [language, setLanguage] = useState<"auto" | "zh" | "en">("auto");
-  const [tendency, setTendency] = useState("default");
+  const [generationStep, setGenerationStep] = useState<"idle" | "analyzing" | "generating" | "ranking" | "done">("idle");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [resultPersona, setResultPersona] = useState<{ name: string; emoji: string } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [session, setSession] = useState<{ user: { id: string; email: string } } | null>(null);
+  const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -81,6 +59,7 @@ export default function Home() {
     setLoading(true);
     setResult(null);
     setResultPersona(null);
+    setGenerationStep("analyzing");
     try {
       const res = await fetch("/api/comments", {
         method: "POST",
@@ -89,8 +68,9 @@ export default function Home() {
       });
       const data = await res.json();
       if (res.ok) {
+        setGenerationStep("done");
         setResult(data);
-        setResultPersona({ name: currentPersona.name, emoji: personaEmojis[currentPersona.id] });
+        setResultPersona({ name: currentPersona.name, emoji: currentPersona.emoji });
         // 已登录则保存到后端
         if (session?.user?.id) {
           try {
@@ -98,7 +78,7 @@ export default function Home() {
               content,
               personaId,
               personaName: currentPersona.name,
-              personaEmoji: personaEmojis[currentPersona.id],
+              personaEmoji: currentPersona.emoji,
               comments: data.comments,
               analysis: data.analysis,
             });
@@ -113,6 +93,7 @@ export default function Home() {
       alert("网络错误，请重试");
     } finally {
       setLoading(false);
+      setGenerationStep("idle");
     }
   };
 
@@ -169,9 +150,6 @@ export default function Home() {
           </div>
         </div>
         <div className="header-right">
-          <button className="btn-ghost">
-            今日剩余 <span className="highlight">20</span> 次
-          </button>
           {session ? (
             <>
               <a href="/history" className="btn-ghost" style={{ textDecoration: "none" }}>
@@ -193,7 +171,7 @@ export default function Home() {
             <>
               <button
                 className="btn-ghost"
-                onClick={() => alert("登录后可保存历史记录")}
+                onClick={() => window.location.href = "/login?redirect=/history"}
               >
                 📋 历史记录
               </button>
@@ -244,20 +222,25 @@ export default function Home() {
               <span className="step-badge">STEP 2</span>
               <span className="step-name">选择评论人格</span>
             </div>
-            <div className="persona-grid">
-              {personas.map((p) => (
-                <button
-                  key={p.id}
-                  className={`persona-card${personaId === p.id ? " active" : ""}`}
-                  onClick={() => setPersonaId(p.id)}
-                >
-                  <div className="persona-check">✓</div>
-                  <div className="persona-em">{personaEmojis[p.id]}</div>
-                  <div className="persona-name">{p.name}</div>
-                  <div className="persona-sub">{personaShortDesc[p.id]}</div>
-                </button>
-              ))}
-            </div>
+            {selectedPersona && (
+              <div
+                className="selected-persona"
+                onClick={() => setIsPersonaModalOpen(true)}
+              >
+                <div className="selected-persona-emoji">{selectedPersona.emoji}</div>
+                <div className="selected-persona-info">
+                  <div className="selected-persona-name">{selectedPersona.name}</div>
+                  <div className="selected-persona-desc">{selectedPersona.description}</div>
+                </div>
+                <span className="selected-persona-change">更换</span>
+              </div>
+            )}
+            <PersonaPickerModal
+              open={isPersonaModalOpen}
+              currentPersonaId={personaId}
+              onSelect={setPersonaId}
+              onClose={() => setIsPersonaModalOpen(false)}
+            />
           </div>
 
           {/* STEP 3 */}
@@ -297,20 +280,6 @@ export default function Home() {
                   <span className="select-arrow">▾</span>
                 </div>
               </div>
-              <div>
-                <div className="field-label">😊 评论倾向</div>
-                <div className="select-wrap">
-                  <select
-                    value={tendency}
-                    onChange={(e) => setTendency(e.target.value)}
-                  >
-                    <option value="default">默认</option>
-                    <option value="positive">积极</option>
-                    <option value="critical">批判</option>
-                  </select>
-                  <span className="select-arrow">▾</span>
-                </div>
-              </div>
             </div>
             <button
               className="btn-generate"
@@ -333,7 +302,7 @@ export default function Home() {
             <div className="panel-title">✨ 生成结果预览</div>
 
             {!result && !loading && <EmptyState />}
-            {loading && <LoadingState />}
+            {loading && <LoadingState step={generationStep} />}
             {result && resultPersona && (
               <ResultPanel
                 result={result}
@@ -344,6 +313,7 @@ export default function Home() {
                 copiedIndex={copiedIndex}
                 onCopy={handleCopy}
                 onRefined={handleCommentRefined}
+                onRegenerate={handleGenerate}
               />
             )}
           </div>
@@ -395,14 +365,33 @@ function EmptyState() {
 }
 
 // ========== 加载状态 ==========
-function LoadingState() {
+function LoadingState({ step }: { step: string }) {
+  const stepLabels: Record<string, { text: string; icon: string }> = {
+    analyzing: { text: "正在分析内容...", icon: "🔍" },
+    generating: { text: "正在生成评论...", icon: "✍️" },
+    ranking: { text: "正在评分润色...", icon: "⭐" },
+  };
+  const current = stepLabels[step] || { text: "AI 正在生成评论...", icon: "✨" };
+  const steps = [
+    { key: "analyzing", label: "分析" },
+    { key: "generating", label: "生成" },
+    { key: "ranking", label: "评分" },
+  ];
+
   return (
     <div className="empty-wrap">
-      <div className="empty-icon" style={{ fontSize: 32 }}>✨</div>
-      <div className="empty-desc">AI 正在生成评论...</div>
-      <p style={{ fontSize: 13, color: "#64748B" }}>
-        分析内容 → 生成多角度评论 → 质量评分润色
-      </p>
+      <div className="empty-icon" style={{ fontSize: 32 }}>{current.icon}</div>
+      <div className="empty-desc">{current.text}</div>
+      <div className="loading-steps">
+        {steps.map((s) => (
+          <span
+            key={s.key}
+            className={`loading-step${step === s.key ? " active" : ""}`}
+          >
+            {s.label}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -417,6 +406,7 @@ function ResultPanel({
   copiedIndex,
   onCopy,
   onRefined,
+  onRegenerate,
 }: {
   result: GenerateResponse;
   personaName: string;
@@ -426,6 +416,7 @@ function ResultPanel({
   copiedIndex: number | null;
   onCopy: (text: string, index: number) => void;
   onRefined: (index: number, refined: string, record: RefineRecord) => void;
+  onRegenerate: () => void;
 }) {
   return (
     <>
@@ -467,6 +458,31 @@ function ResultPanel({
             onRefined={onRefined}
           />
         ))}
+      </div>
+
+      {/* 底部操作栏 */}
+      <div className="result-actions-bar">
+        <button className="btn-act" onClick={onRegenerate}>
+          🔄 换一批
+        </button>
+        <button
+          className="btn-act"
+          onClick={() => {
+            const allText = result.comments.map((c) => c.text).join("\n\n");
+            navigator.clipboard.writeText(allText).catch(() => {
+              const el = document.createElement("textarea");
+              el.value = allText;
+              el.style.position = "fixed";
+              el.style.opacity = "0";
+              document.body.appendChild(el);
+              el.select();
+              document.execCommand("copy");
+              document.body.removeChild(el);
+            });
+          }}
+        >
+          📋 复制全部
+        </button>
       </div>
     </>
   );
@@ -551,6 +567,21 @@ function CommentCard({
           <button className="btn-act" onClick={onCopy}>
             {isCopied ? "✅ 已复制" : "📋 复制"}
           </button>
+          {comment.originalText && onRefined && (
+            <button
+              className="btn-act"
+              onClick={() => {
+                onRefined(index, comment.originalText!, {
+                  type: "colloquial",
+                  before: comment.text,
+                  after: comment.originalText!,
+                  createdAt: Date.now(),
+                });
+              }}
+            >
+              ↩ 还原
+            </button>
+          )}
           {!readOnly && (
             <>
               <button
