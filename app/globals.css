@@ -7,27 +7,74 @@
     background: var(--bg-page);
     color: var(--text-primary);
     min-height: 100vh;
+    transition: background-color .2s, color .2s;
   }
 }
 
-/* ─── Design Tokens ─── */
+/* ─── Design Tokens: Dark (default, vLLM zinc) ─── */
 :root {
-  --bg-page:       #FFFFFF;
-  --bg-card:       #FFFFFF;
-  --bg-secondary:  #F8FAFC;
-  --border-normal: #E2E8F0;
-  --border-hi:     #2563EB;
-  --purple:        #7C3AED;
-  --blue:          #2563EB;
-  --text-primary:  #1F2937;
-  --text-body:     #475569;
-  --text-muted:    #64748B;
-  --text-placeholder: #94A3B8;
-  --success:       #15803D;
-  --warning:       #B45309;
+  --bg-page:       #09090b;
+  --bg-card:       #09090b;
+  --bg-secondary:  #18181b;
+  --border-normal: #27272a;
+  --border-hi:     #3b82f6;
+  --purple:        #7c3aed;
+  --blue:          #3b82f6;
+  --text-primary:  #f4f4f5;
+  --text-body:     #a1a1aa;
+  --text-muted:    #71717a;
+  --text-placeholder: #52525b;
+  --success:       #22c55e;
+  --warning:       #f97316;
   --radius-card:   12px;
   --radius-btn:    8px;
   --btn-h:         48px;
+  --glow-selected: 0 0 12px rgba(59,130,246,.12);
+  --selection-bg:  rgba(59,130,246,.08);
+  --code-bg:       #0c0c0e;
+  --tag-bg:        rgba(39,39,42,.6);
+  --tag-border:    rgba(63,63,70,.5);
+}
+
+/* ─── Design Tokens: Light (Modern Tech Doc) ─── */
+[data-theme="light"] {
+  --bg-page:       #ffffff;
+  --bg-card:       #ffffff;
+  --bg-secondary:  #f8fafc;
+  --border-normal: #e2e8f0;
+  --border-hi:     #2563eb;
+  --purple:        #7c3aed;
+  --blue:          #2563eb;
+  --text-primary:  #1f2937;
+  --text-body:     #475569;
+  --text-muted:    #64748b;
+  --text-placeholder: #94a3b8;
+  --success:       #15803d;
+  --warning:       #b45309;
+  --glow-selected: none;
+  --selection-bg:  #eff6ff;
+  --code-bg:       #f8fafc;
+  --tag-bg:        #f1f5f9;
+  --tag-border:    #e2e8f0;
+}
+
+/* ─── Theme Toggle Button ─── */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-normal);
+  border-radius: 8px;
+  color: var(--text-body);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.theme-toggle:hover {
+  border-color: var(--border-hi);
+  background: var(--bg-secondary);
 }
 
 /* ─── Base ─── */

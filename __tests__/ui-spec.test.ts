@@ -8,65 +8,94 @@ import path from "path";
  * Token 测试读取真实 CSS 文件，不是自断言硬编码值
  */
 
-// ========== 1. Design Tokens 颜色测试 ==========
+// ========== 1. Design Tokens 双主题测试 ==========
 
-describe("design tokens match Modern Technical Doc style", () => {
-  // 从真实 CSS 文件读取 :root 变量
+describe("dual theme design tokens", () => {
   const cssPath = path.resolve(__dirname, "../app/globals.css");
   const cssContent = fs.readFileSync(cssPath, "utf-8");
 
-  const expectedTokens: Record<string, string> = {
-    "--bg-page":       "#FFFFFF",
-    "--bg-card":       "#FFFFFF",
-    "--bg-secondary":  "#F8FAFC",
-    "--border-normal": "#E2E8F0",
-    "--border-hi":     "#2563EB",
-    "--purple":        "#7C3AED",
-    "--blue":          "#2563EB",
-    "--text-primary":  "#1F2937",
-    "--text-body":     "#475569",
-    "--text-muted":    "#64748B",
-    "--text-placeholder": "#94A3B8",
-    "--success":       "#15803D",
-    "--warning":       "#B45309",
-  };
+  // 从 CSS 中提取指定区块内的变量（:root 或 [data-theme="light"]）
+  function extractBlock(content: string, blockSelector: string): string {
+    const startPattern = blockSelector === ":root"
+      ? /:root\s*\{/
+      : new RegExp(`\\[data-theme="light"\\]\\s*\\{`);
+    const startMatch = content.match(startPattern);
+    if (!startMatch || startMatch.index === undefined) return "";
+    let depth = 0;
+    let i = startMatch.index;
+    while (i < content.length) {
+      if (content[i] === "{") depth++;
+      if (content[i] === "}") { depth--; if (depth === 0) return content.slice(startMatch.index, i + 1); }
+      i++;
+    }
+    return "";
+  }
 
-  // 从 CSS 文件解析 :root 里的 CSS 变量
-  function extractCssVar(content: string, varName: string): string | null {
-    const regex = new RegExp(`${varName.replace("-", "\\-")}\\s*:\\s*([^;]+)`);
-    const match = content.match(regex);
+  function extractVar(block: string, varName: string): string | null {
+    const regex = new RegExp(`${varName.replace(/-/g, "\\-")}\\s*:\\s*([^;]+)`);
+    const match = block.match(regex);
     return match ? match[1].trim() : null;
   }
 
-  it("all expected tokens should exist in globals.css", () => {
-    for (const varName of Object.keys(expectedTokens)) {
-      const value = extractCssVar(cssContent, varName);
-      expect(value).not.toBeNull();
+  const darkExpected: Record<string, string> = {
+    "--bg-page":       "#09090b",
+    "--bg-card":       "#09090b",
+    "--bg-secondary":  "#18181b",
+    "--border-normal": "#27272a",
+    "--border-hi":     "#3b82f6",
+    "--blue":          "#3b82f6",
+    "--text-primary":  "#f4f4f5",
+    "--text-body":     "#a1a1aa",
+    "--text-muted":    "#71717a",
+    "--success":       "#22c55e",
+    "--warning":       "#f97316",
+  };
+
+  // 浅色 token 已修正对比度：text-muted #64748B (4.76:1), success #15803d (5.02:1), warning #b45309 (5.02:1)
+  const lightExpected: Record<string, string> = {
+    "--bg-page":       "#ffffff",
+    "--bg-card":       "#ffffff",
+    "--bg-secondary":  "#f8fafc",
+    "--border-normal": "#e2e8f0",
+    "--border-hi":     "#2563eb",
+    "--blue":          "#2563eb",
+    "--text-primary":  "#1f2937",
+    "--text-body":     "#475569",
+    "--text-muted":    "#64748b",
+    "--text-placeholder": "#94a3b8",
+    "--success":       "#15803d",
+    "--warning":       "#b45309",
+  };
+
+  it(":root (dark) tokens should all exist and match", () => {
+    const block = extractBlock(cssContent, ":root");
+    expect(block.length).toBeGreaterThan(0);
+    for (const [varName, expected] of Object.entries(darkExpected)) {
+      const actual = extractVar(block, varName);
+      expect(actual, `:root ${varName}`).toBe(expected);
     }
   });
 
-  it("bg-card should be white (#FFFFFF) per new design", () => {
-    expect(extractCssVar(cssContent, "--bg-card")).toBe("#FFFFFF");
-  });
-
-  it("border-normal should be slate-200 (#E2E8F0) per new design", () => {
-    expect(extractCssVar(cssContent, "--border-normal")).toBe("#E2E8F0");
-  });
-
-  it("text-primary should be dark (#1F2937) per new design", () => {
-    expect(extractCssVar(cssContent, "--text-primary")).toBe("#1F2937");
-  });
-
-  it("accent colors should remain blue (#2563EB) and purple (#7C3AED)", () => {
-    expect(extractCssVar(cssContent, "--blue")).toBe("#2563EB");
-    expect(extractCssVar(cssContent, "--purple")).toBe("#7C3AED");
-  });
-
-  it("all CSS token values should match expected tokens", () => {
-    for (const [varName, expected] of Object.entries(expectedTokens)) {
-      const actual = extractCssVar(cssContent, varName);
-      expect(actual, `CSS variable ${varName}`).toBe(expected);
+  it("[data-theme=light] tokens should all exist and match", () => {
+    const block = extractBlock(cssContent, '[data-theme="light"]');
+    expect(block.length).toBeGreaterThan(0);
+    for (const [varName, expected] of Object.entries(lightExpected)) {
+      const actual = extractVar(block, varName);
+      expect(actual, `[data-theme="light"] ${varName}`).toBe(expected);
     }
+  });
+
+  it("dark and light should differ for bg/text/border", () => {
+    expect(darkExpected["--bg-page"]).not.toBe(lightExpected["--bg-page"]);
+    expect(darkExpected["--text-primary"]).not.toBe(lightExpected["--text-primary"]);
+    expect(darkExpected["--border-normal"]).not.toBe(lightExpected["--border-normal"]);
+  });
+
+  it("accent purple should be consistent across themes", () => {
+    const darkBlock = extractBlock(cssContent, ":root");
+    const lightBlock = extractBlock(cssContent, '[data-theme="light"]');
+    expect(extractVar(darkBlock, "--purple")).toBe("#7c3aed");
+    expect(extractVar(lightBlock, "--purple")).toBe("#7c3aed");
   });
 });
 
