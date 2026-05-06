@@ -1,12 +1,12 @@
-# Visual Redesign: Modern Technical Documentation Style — Implementation Plan
+# Visual Redesign: Dual Theme (vLLM zinc Dark + Modern Tech Doc Light) — Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Replace the current dark cyberpunk visual theme with a clean Modern Technical Documentation style (white background, slate borders, Inter font, high readability).
+**Goal:** Replace the current single dark theme with a dual-theme system: a vLLM Recipes-style zinc dark theme (default) + a clean Modern Technical Documentation light theme, with a toggle button persisted in localStorage.
 
-**Architecture:** Pure CSS redesign — all changes happen in `globals.css` Design Tokens + component styles. Only minimal JSX changes in `page.tsx` to replace inline styles with CSS classes. No component structure, logic, or data changes.
+**Architecture:** CSS custom properties power the entire theme system. `:root` defines dark tokens as default; `[data-theme="light"]` overrides them. A small `ThemeToggle` component reads/writes `data-theme` on `<html>` and persists to `localStorage`. All inline styles in JSX are eliminated in favor of CSS classes.
 
-**Tech Stack:** Next.js 16 (App Router), plain CSS (globals.css), Vitest
+**Tech Stack:** Next.js 16 (App Router), plain CSS (globals.css), React state + localStorage for theme persistence, Vitest
 
 ---
 
@@ -16,7 +16,7 @@
 |---|---|
 | 改数据模型/接口契约？ | 否 |
 | 影响面 >1 Feature？ | 否 — 一个视觉改造 Feature |
-| 新增 >200 行？ | 是 — globals.css 全面改写 |
+| 新增 >200 行？ | 是 — globals.css 全面改写 + ThemeToggle 组件 |
 | **结论** | **M 级**（变更 Spec + 1 Feature 详细 plan） |
 
 ---
@@ -25,62 +25,82 @@
 
 | Action | File | Responsibility |
 |--------|------|----------------|
-| Modify | `app/globals.css` | Design Tokens 翻新 + 所有组件样式重写 |
-| Modify | `app/page.tsx` | 清除内联 style，改用 CSS class |
-| Modify | `__tests__/ui-spec.test.ts` | 更新 design tokens 测试值 |
+| Modify | `app/globals.css` | 双主题 Design Tokens + 所有组件样式重写 |
+| Modify | `app/page.tsx` | 添加 ThemeToggle + 清除内联 style |
+| Create | `app/components/ThemeToggle.tsx` | 主题切换按钮（☀/🌙）+ localStorage 持久化 |
+| Modify | `__tests__/ui-spec.test.ts` | 更新 design tokens 测试覆盖双主题 |
 
 ---
 
-### Task 1: Update Design Tokens + Base Styles
+### Task 1: Dual Theme Design Tokens + ThemeToggle Component
 
 **Files:**
 - Modify: `app/globals.css:1-36`
+- Create: `app/components/ThemeToggle.tsx`
 
 - [ ] **Step 1: Write the failing test**
 
-Update `__tests__/ui-spec.test.ts` section 1 — replace the entire `describe("design tokens match reference HTML", ...)` block:
+Update `__tests__/ui-spec.test.ts` section 1 — replace the entire `describe("design tokens match ...")` block:
 
 ```ts
-// ========== 1. Design Tokens 颜色测试 ==========
+// ========== 1. Design Tokens 双主题测试 ==========
 
-describe("design tokens match Modern Technical Doc style", () => {
-  const tokens = {
-    bgPage: "#FFFFFF",
-    bgCard: "#FFFFFF",
-    bgSecondary: "#F8FAFC",
-    borderNormal: "#E2E8F0",
-    borderHi: "#2563EB",
-    purple: "#7C3AED",
-    blue: "#2563EB",
-    textPrimary: "#1F2937",
-    textBody: "#475569",
-    textMuted: "#94A3B8",
-    textPlaceholder: "#CBD5E1",
-    success: "#16A34A",
-    warning: "#D97706",
+describe("dual theme design tokens", () => {
+  const darkTokens = {
+    bgPage:       "#09090b",
+    bgCard:       "#09090b",
+    bgSecondary:  "#18181b",
+    borderNormal: "#27272a",
+    borderHi:     "#3b82f6",
+    purple:       "#7c3aed",
+    blue:         "#3b82f6",
+    textPrimary:  "#f4f4f5",
+    textBody:     "#a1a1aa",
+    textMuted:    "#71717a",
+    textPlaceholder: "#52525b",
+    success:      "#22c55e",
+    warning:      "#f97316",
   };
 
-  it("all tokens should be valid 6-digit hex", () => {
-    Object.values(tokens).forEach((c) => {
+  const lightTokens = {
+    bgPage:       "#ffffff",
+    bgCard:       "#ffffff",
+    bgSecondary:  "#f8fafc",
+    borderNormal: "#e2e8f0",
+    borderHi:     "#2563eb",
+    purple:       "#7c3aed",
+    blue:         "#2563eb",
+    textPrimary:  "#1f2937",
+    textBody:     "#475569",
+    textMuted:    "#94a3b8",
+    textPlaceholder: "#cbd5e1",
+    success:      "#16a34a",
+    warning:      "#d97706",
+  };
+
+  it("all dark tokens should be valid 6-digit hex", () => {
+    Object.values(darkTokens).forEach((c) => {
       expect(c).toMatch(/^#[0-9A-Fa-f]{6}$/);
     });
   });
 
-  it("bgCard should be white (#FFFFFF) per new design", () => {
-    expect(tokens.bgCard).toBe("#FFFFFF");
+  it("all light tokens should be valid 6-digit hex", () => {
+    Object.values(lightTokens).forEach((c) => {
+      expect(c).toMatch(/^#[0-9A-Fa-f]{6}$/);
+    });
   });
 
-  it("borderNormal should be slate-200 (#E2E8F0) per new design", () => {
-    expect(tokens.borderNormal).toBe("#E2E8F0");
+  it("dark and light tokens should differ for bg/text/border", () => {
+    expect(darkTokens.bgPage).not.toBe(lightTokens.bgPage);
+    expect(darkTokens.textPrimary).not.toBe(lightTokens.textPrimary);
+    expect(darkTokens.borderNormal).not.toBe(lightTokens.borderNormal);
   });
 
-  it("textPrimary should be dark (#1F2937) per new design", () => {
-    expect(tokens.textPrimary).toBe("#1F2937");
-  });
-
-  it("accent colors should remain blue (#2563EB) and purple (#7C3AED)", () => {
-    expect(tokens.blue).toBe("#2563EB");
-    expect(tokens.purple).toBe("#7C3AED");
+  it("accent colors should be defined in both themes", () => {
+    expect(darkTokens.blue).toBeDefined();
+    expect(lightTokens.blue).toBeDefined();
+    expect(darkTokens.purple).toBeDefined();
+    expect(lightTokens.purple).toBeDefined();
   });
 });
 ```
@@ -88,9 +108,9 @@ describe("design tokens match Modern Technical Doc style", () => {
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run __tests__/ui-spec.test.ts`
-Expected: FAIL — test expects `#FFFFFF` bgCard but current CSS has `#0F172A`
+Expected: FAIL — test expects new token values
 
-- [ ] **Step 3: Update Design Tokens in globals.css**
+- [ ] **Step 3: Replace Design Tokens in globals.css**
 
 Replace lines 1-36 of `app/globals.css` (the `@import`, `@layer base`, and `:root` block) with:
 
@@ -104,73 +124,147 @@ Replace lines 1-36 of `app/globals.css` (the `@import`, `@layer base`, and `:roo
     background: var(--bg-page);
     color: var(--text-primary);
     min-height: 100vh;
+    transition: background-color .2s, color .2s;
   }
 }
 
-/* ─── Design Tokens ─── */
+/* ─── Design Tokens: Dark (default, vLLM zinc) ─── */
 :root {
-  --bg-page:       #FFFFFF;
-  --bg-card:       #FFFFFF;
-  --bg-secondary:  #F8FAFC;
-  --border-normal: #E2E8F0;
-  --border-hi:     #2563EB;
-  --purple:        #7C3AED;
-  --blue:          #2563EB;
-  --text-primary:  #1F2937;
-  --text-body:     #475569;
-  --text-muted:    #94A3B8;
-  --text-placeholder: #CBD5E1;
-  --success:       #16A34A;
-  --warning:       #D97706;
+  --bg-page:       #09090b;
+  --bg-card:       #09090b;
+  --bg-secondary:  #18181b;
+  --border-normal: #27272a;
+  --border-hi:     #3b82f6;
+  --purple:        #7c3aed;
+  --blue:          #3b82f6;
+  --text-primary:  #f4f4f5;
+  --text-body:     #a1a1aa;
+  --text-muted:    #71717a;
+  --text-placeholder: #52525b;
+  --success:       #22c55e;
+  --warning:       #f97316;
   --radius-card:   12px;
   --radius-btn:    8px;
   --btn-h:         48px;
+  --glow-selected: 0 0 12px rgba(59,130,246,.12);
+  --selection-bg:  rgba(59,130,246,.08);
+  --code-bg:       #0c0c0e;
+  --tag-bg:        rgba(39,39,42,.6);
+  --tag-border:    rgba(63,63,70,.5);
+}
+
+/* ─── Design Tokens: Light (Modern Tech Doc) ─── */
+[data-theme="light"] {
+  --bg-page:       #ffffff;
+  --bg-card:       #ffffff;
+  --bg-secondary:  #f8fafc;
+  --border-normal: #e2e8f0;
+  --border-hi:     #2563eb;
+  --purple:        #7c3aed;
+  --blue:          #2563eb;
+  --text-primary:  #1f2937;
+  --text-body:     #475569;
+  --text-muted:    #94a3b8;
+  --text-placeholder: #cbd5e1;
+  --success:       #16a34a;
+  --warning:       #d97706;
+  --glow-selected: none;
+  --selection-bg:  #eff6ff;
+  --code-bg:       #f8fafc;
+  --tag-bg:        #f1f5f9;
+  --tag-border:    #e2e8f0;
 }
 ```
 
-Key changes:
-- `--bg-page`: `#050816` → `#FFFFFF`
-- `--bg-card`: `#0F172A` → `#FFFFFF`
-- `--bg-secondary`: `#111827` → `#F8FAFC`
-- `--border-normal`: `#1F2937` → `#E2E8F0`
-- `--border-hi`: `#6366F1` → `#2563EB` (indigo → blue)
-- `--text-primary`: `#F8FAFC` → `#1F2937` (light → dark)
-- `--text-body`: `#CBD5E1` → `#475569`
-- `--text-muted`: `#64748B` → `#94A3B8`
-- `--text-placeholder`: `#475569` → `#CBD5E1`
-- `--success`: `#22C55E` → `#16A34A`
-- `--warning`: `#F59E0B` → `#D97706`
-- Removed radial-gradient from body
-- Added 'Inter' and 'Noto Sans SC' to font stack
+- [ ] **Step 4: Create ThemeToggle component**
 
-- [ ] **Step 4: Run test to verify it passes**
+Create `app/components/ThemeToggle.tsx`:
 
-Run: `npx vitest run __tests__/ui-spec.test.ts -t "design tokens"`
+```tsx
+"use client";
+
+import { useState, useEffect } from "react";
+
+export default function ThemeToggle() {
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  }, []);
+
+  function toggle() {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("theme", next);
+  }
+
+  return (
+    <button className="theme-toggle" onClick={toggle} aria-label="Toggle theme">
+      {theme === "dark" ? "☀" : "🌙"}
+    </button>
+  );
+}
+```
+
+- [ ] **Step 5: Add theme-toggle CSS**
+
+In `app/globals.css`, add after the `[data-theme="light"]` block:
+
+```css
+/* ─── Theme Toggle Button ─── */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--border-normal);
+  border-radius: 8px;
+  color: var(--text-body);
+  font-size: 16px;
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: border-color .15s, background .15s;
+}
+.theme-toggle:hover {
+  border-color: var(--border-hi);
+  background: var(--bg-secondary);
+}
+```
+
+- [ ] **Step 6: Run test to verify it passes**
+
+Run: `npx vitest run __tests__/ui-spec.test.ts -t "dual theme"`
 Expected: PASS
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 7: Commit**
 
 ```bash
-git add app/globals.css __tests__/ui-spec.test.ts
-git commit -m "refactor: update design tokens from dark cyberpunk to Modern Tech Doc style"
+git add app/globals.css app/components/ThemeToggle.tsx __tests__/ui-spec.test.ts
+git commit -m "feat: dual theme design tokens (vLLM zinc dark + Modern Tech Doc light) + ThemeToggle component"
 ```
 
 ---
 
-### Task 2: Rewrite Component Styles (Header, Buttons, Layout, Cards, Steps)
+### Task 2: Rewrite Base + Header + Buttons + Layout + Cards + Steps
 
 **Files:**
 - Modify: `app/globals.css:37-120`
+- Modify: `app/page.tsx` (add ThemeToggle import + render)
 
 - [ ] **Step 1: Replace base + header + buttons + layout + card + step styles**
 
-Replace lines 37-120 of `app/globals.css` (from `/* ─── Base ─── */` through `.step-name`) with:
+Replace lines 37-120 of `app/globals.css` with:
 
 ```css
 /* ─── Base ─── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-button { font-family: inherit; cursor: pointer; transition: opacity .15s, background-color .15s, border-color .15s; }
+button { font-family: inherit; cursor: pointer; transition: opacity .15s, background-color .15s, border-color .15s, color .15s; }
 
 /* ─── Page Wrapper ─── */
 .page {
@@ -195,10 +289,10 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, backgr
   background: var(--blue);
   border-radius: 10px;
   display: grid; place-items: center;
-  color: #FFFFFF;
+  color: #fff;
   flex-shrink: 0;
 }
-.header-titles h1 { font-size: 28px; font-weight: 700; color: var(--text-primary); letter-spacing: -0.02em; }
+.header-titles h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .header-titles p  { font-size: 14px; font-weight: 400; color: var(--text-muted); margin-top: 2px; }
 
 .header-right { display: flex; align-items: center; gap: 10px; }
@@ -215,18 +309,17 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, backgr
   white-space: nowrap;
 }
 .btn-ghost:hover { border-color: var(--border-hi); color: var(--border-hi); }
-.btn-ghost .highlight { color: var(--blue); font-weight: 700; font-size: 16px; }
 
 .btn-primary {
   background: var(--blue);
   border: none;
-  color: #FFFFFF;
+  color: #fff;
   padding: 8px 20px;
   border-radius: var(--radius-btn);
   font-size: 14px; font-weight: 600;
   display: inline-flex; align-items: center; gap: 6px;
 }
-.btn-primary:hover { background: #1D4ED8; }
+.btn-primary:hover { opacity: .88; }
 
 /* ═══════ TWO-COLUMN LAYOUT ═══════ */
 .main {
@@ -242,37 +335,55 @@ button { font-family: inherit; cursor: pointer; transition: opacity .15s, backgr
   border: 1px solid var(--border-normal);
   border-radius: var(--radius-card);
   padding: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,.06);
 }
 
 /* ─── Step Label ─── */
 .step-row { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
 .step-badge {
-  background: #EFF6FF;
+  background: var(--selection-bg);
   color: var(--blue);
   font-size: 10px; font-weight: 700;
   padding: 3px 8px; border-radius: 4px; letter-spacing: .6px;
 }
-.step-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.step-name { font-size: 14px; font-weight: 600; }
 ```
 
-Key changes:
-- Header: removed gradient logo (solid blue), added bottom border separator
-- Cards: white bg + subtle shadow instead of dark bg
-- Step badge: light blue bg (#EFF6FF) instead of dark bg
-- Buttons: solid blue instead of gradient, hover darkens instead of opacity
-- Layout: fixed left column 400px instead of 40%
+- [ ] **Step 2: Add ThemeToggle to page.tsx header**
 
-- [ ] **Step 2: Run full test suite**
+In `app/page.tsx`:
+
+**a) Add import** (after line 7):
+
+```ts
+import ThemeToggle from "./components/ThemeToggle";
+```
+
+**b) Add ThemeToggle to header-right** — insert before the session conditional (before line 153):
+
+In the `<div className="header-right">`, add `<ThemeToggle />` as the first child:
+
+Replace:
+```tsx
+<div className="header-right">
+  {session ? (
+```
+With:
+```tsx
+<div className="header-right">
+  <ThemeToggle />
+  {session ? (
+```
+
+- [ ] **Step 3: Run full test suite**
 
 Run: `npx vitest run`
-Expected: All pass (CSS changes don't break logic tests)
+Expected: All pass
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add app/globals.css
-git commit -m "style: rewrite header, buttons, layout, cards for Modern Tech Doc theme"
+git add app/globals.css app/page.tsx
+git commit -m "style: rewrite base, header, buttons, layout, cards with dual-theme CSS variables"
 ```
 
 ---
@@ -280,11 +391,11 @@ git commit -m "style: rewrite header, buttons, layout, cards for Modern Tech Doc
 ### Task 3: Rewrite Left Panel + Persona + Modal Styles
 
 **Files:**
-- Modify: `app/globals.css:120-278` (left panel + persona + modal sections)
+- Modify: `app/globals.css` (left panel + modal sections)
 
 - [ ] **Step 1: Replace left panel + modal styles**
 
-Replace the sections from `/* ═══════ LEFT PANEL ═══════ */` through the end of `.modal-persona-check { ... }` (lines 120-278) with:
+Replace the sections from `/* ═══════ LEFT PANEL ═══════ */` through the end of `.modal-persona-check { ... }` with:
 
 ```css
 /* ═══════ LEFT PANEL ═══════ */
@@ -293,7 +404,7 @@ Replace the sections from `/* ═══════ LEFT PANEL ═════�
 /* Step 1 – Textarea */
 textarea {
   width: 100%; height: 180px;
-  background: var(--bg-secondary);
+  background: var(--code-bg);
   border: 1px solid var(--border-normal);
   border-radius: 8px;
   color: var(--text-primary);
@@ -303,7 +414,7 @@ textarea {
   transition: border-color .2s, box-shadow .2s;
 }
 textarea::placeholder { color: var(--text-placeholder); }
-textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 
 .char-count { text-align: right; font-size: 12px; color: var(--text-muted); margin-top: 6px; }
 
@@ -327,26 +438,26 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
   border-radius: 10px;
   padding: 14px 16px;
   cursor: pointer;
-  transition: border-color .2s;
+  transition: border-color .2s, box-shadow .2s;
 }
-.selected-persona:hover { border-color: var(--border-hi); }
+.selected-persona:hover { border-color: var(--border-hi); box-shadow: var(--glow-selected); }
 .selected-persona-emoji { font-size: 28px; flex-shrink: 0; }
 .selected-persona-info { flex: 1; min-width: 0; }
-.selected-persona-name { font-size: 15px; font-weight: 600; color: var(--text-primary); }
+.selected-persona-name { font-size: 15px; font-weight: 600; }
 .selected-persona-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .selected-persona-change {
-  font-size: 12px; color: var(--border-hi);
+  font-size: 12px; color: var(--blue);
   background: transparent; border: 1px solid var(--border-normal);
   border-radius: 6px; padding: 5px 12px;
   white-space: nowrap;
-  transition: border-color .15s;
+  transition: border-color .15s, background .15s;
 }
-.selected-persona-change:hover { border-color: var(--border-hi); background: #EFF6FF; }
+.selected-persona-change:hover { border-color: var(--border-hi); background: var(--selection-bg); }
 
 /* ═══════ PERSONA PICKER MODAL ═══════ */
 .modal-overlay {
   position: fixed; inset: 0;
-  background: rgba(15,23,42,.4);
+  background: rgba(0,0,0,.5);
   z-index: 200;
   display: flex; align-items: center; justify-content: center;
   padding: 24px;
@@ -361,7 +472,7 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
   width: 100%; max-width: 560px;
   max-height: 80vh;
   display: flex; flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0,0,0,.15);
+  box-shadow: 0 20px 60px rgba(0,0,0,.2);
   animation: slideUp .2s ease-out;
 }
 @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
@@ -370,7 +481,7 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
   display: flex; align-items: flex-start; justify-content: space-between;
   padding: 24px 24px 0;
 }
-.modal-title { font-size: 18px; font-weight: 700; color: var(--text-primary); }
+.modal-title { font-size: 18px; font-weight: 700; }
 .modal-subtitle { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
 .modal-close {
   background: transparent; border: none; color: var(--text-muted);
@@ -382,7 +493,7 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
 .modal-search-wrap { padding: 16px 24px 0; }
 .modal-search {
   width: 100%;
-  background: var(--bg-secondary);
+  background: var(--code-bg);
   border: 1px solid var(--border-normal);
   border-radius: 8px;
   color: var(--text-primary);
@@ -391,15 +502,15 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
   outline: none; transition: border-color .2s, box-shadow .2s;
 }
 .modal-search::placeholder { color: var(--text-placeholder); }
-.modal-search:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+.modal-search:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 
 .modal-tags {
   display: flex; gap: 6px; flex-wrap: wrap;
   padding: 12px 24px 0;
 }
 .modal-tag {
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-normal);
+  background: var(--tag-bg);
+  border: 1px solid var(--tag-border);
   border-radius: 14px;
   color: var(--text-body);
   font-size: 12px; padding: 5px 14px;
@@ -407,9 +518,9 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
 }
 .modal-tag:hover { border-color: var(--border-hi); }
 .modal-tag.active {
-  background: #EFF6FF;
+  background: var(--selection-bg);
   border-color: var(--border-hi);
-  color: var(--border-hi); font-weight: 600;
+  color: var(--blue); font-weight: 600;
 }
 
 .modal-grid {
@@ -428,33 +539,27 @@ textarea:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(37,9
   border: 1px solid var(--border-normal);
   border-radius: 10px; padding: 12px 14px;
   cursor: pointer; text-align: left;
-  transition: border-color .2s, background .15s;
+  transition: border-color .2s, background .15s, box-shadow .2s;
   width: 100%;
 }
-.modal-persona-card:hover { border-color: var(--border-hi); background: #F8FAFC; }
+.modal-persona-card:hover { border-color: var(--border-hi); }
 .modal-persona-card.active {
   border-color: var(--border-hi);
-  background: #EFF6FF;
+  background: var(--selection-bg);
+  box-shadow: var(--glow-selected);
 }
 .modal-persona-emoji { font-size: 24px; flex-shrink: 0; }
 .modal-persona-info { flex: 1; min-width: 0; }
-.modal-persona-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+.modal-persona-name { font-size: 14px; font-weight: 600; }
 .modal-persona-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
 .modal-persona-check {
   width: 20px; height: 20px;
-  background: var(--border-hi);
+  background: var(--blue);
   border-radius: 50%; place-items: center;
   font-size: 11px; font-weight: 700; color: #fff;
   display: grid; flex-shrink: 0;
 }
 ```
-
-Key changes:
-- Textarea: added focus ring (`box-shadow`)
-- Modal overlay: lighter backdrop (`rgba(15,23,42,.4)` instead of `rgba(0,0,0,.6)`)
-- Modal panel: removed dark border, added box-shadow, white bg
-- Modal tags: light blue active state (#EFF6FF) instead of indigo tint
-- Active persona card: light blue bg instead of indigo tint
 
 - [ ] **Step 2: Run full test suite**
 
@@ -465,19 +570,19 @@ Expected: All pass
 
 ```bash
 git add app/globals.css
-git commit -m "style: rewrite left panel, persona card, modal for Modern Tech Doc theme"
+git commit -m "style: rewrite left panel, persona card, modal with dual-theme CSS variables"
 ```
 
 ---
 
-### Task 4: Rewrite Settings + Generate Button + Right Panel Styles
+### Task 4: Rewrite Settings + Generate + Right Panel + Results + History + Auth + Responsive
 
 **Files:**
-- Modify: `app/globals.css` (settings + generate + right panel + empty state + result sections)
+- Modify: `app/globals.css` (rest of file)
 
-- [ ] **Step 1: Replace settings through result-actions-bar styles**
+- [ ] **Step 1: Replace all remaining styles**
 
-Replace from `/* Step 3 – Settings */` through `/* ═══════ RESULT ACTIONS BAR ═══════ */` (including the closing brace) with:
+Replace everything from `/* Step 3 – Settings */` through the end of file with the complete remaining styles. The key principle: **every color uses `var(--xxx)`** — no hardcoded hex values.
 
 ```css
 /* Step 3 – Settings */
@@ -491,7 +596,7 @@ Replace from `/* Step 3 – Settings */` through `/* ═══════ RESUL
 .select-wrap { position: relative; }
 select {
   width: 100%;
-  background: var(--bg-secondary);
+  background: var(--code-bg);
   border: 1px solid var(--border-normal);
   border-radius: 8px;
   color: var(--text-primary);
@@ -513,19 +618,19 @@ select:focus { border-color: var(--border-hi); }
   width: 100%; height: var(--btn-h);
   background: var(--blue);
   border: none; border-radius: 10px;
-  color: #FFFFFF;
+  color: #fff;
   font-size: 16px; font-weight: 600;
   margin-top: 16px;
   display: flex; align-items: center; justify-content: center; gap: 8px;
-  transition: background .15s;
+  transition: opacity .15s;
 }
-.btn-generate:hover { background: #1D4ED8; }
-.btn-generate:disabled { background: var(--border-normal); color: var(--text-muted); cursor: not-allowed; }
+.btn-generate:hover { opacity: .88; }
+.btn-generate:disabled { opacity: .4; cursor: not-allowed; }
 .gen-note { text-align: center; font-size: 12px; color: var(--text-muted); margin-top: 8px; }
 
 /* ═══════ RIGHT PANEL ═══════ */
 .right-panel .card { height: 100%; min-height: 600px; }
-.panel-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; color: var(--text-primary); }
+.panel-title { font-size: 18px; font-weight: 600; margin-bottom: 20px; }
 
 /* Empty State */
 .empty-wrap { text-align: center; padding: 12px 0 24px; }
@@ -551,7 +656,7 @@ select:focus { border-color: var(--border-hi); }
   display: flex; align-items: flex-start; gap: 10px;
 }
 .feat-icon  { font-size: 24px; flex-shrink: 0; }
-.feat-name  { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+.feat-name  { font-size: 13px; font-weight: 600; }
 .feat-desc  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
 /* Divider */
@@ -576,7 +681,7 @@ select:focus { border-color: var(--border-hi); }
   border-radius: 10px; padding: 14px;
   margin-bottom: 4px;
 }
-.ex-text { font-size: 14px; color: var(--text-primary); margin-bottom: 8px; line-height: 1.6; }
+.ex-text { font-size: 14px; margin-bottom: 8px; line-height: 1.6; }
 .ex-meta {
   display: flex; align-items: center; gap: 8px;
   font-size: 12px; color: var(--text-muted);
@@ -590,8 +695,10 @@ select:focus { border-color: var(--border-hi); }
   border: 1px solid var(--border-normal);
   border-radius: 10px; padding: 16px;
   display: flex; gap: 12px;
+  transition: border-color .2s, box-shadow .2s;
 }
-.res-num { font-size: 18px; font-weight: 700; color: var(--border-hi); flex-shrink: 0; width: 18px; }
+.result-item:hover { border-color: var(--border-hi); box-shadow: var(--glow-selected); }
+.res-num { font-size: 18px; font-weight: 700; color: var(--blue); flex-shrink: 0; width: 18px; }
 .res-body { flex: 1; }
 
 .res-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
@@ -599,26 +706,27 @@ select:focus { border-color: var(--border-hi); }
   font-size: 11px; font-weight: 500;
   padding: 2px 8px; border-radius: 4px;
 }
-.tag-p { background: #EFF6FF; color: var(--blue); }
-.tag-t { background: #F5F3FF; color: var(--purple); }
+.tag-p { background: var(--selection-bg); color: var(--blue); }
+.tag-t { background: rgba(124,58,237,.12); color: var(--purple); }
 .tag-heat { font-size: 12px; color: var(--text-body); }
 
 .res-text { font-size: 14px; color: var(--text-body); line-height: 1.55; }
 
 .res-actions { display: flex; gap: 6px; margin-top: 10px; }
 .btn-act {
-  background: #FFFFFF;
+  background: var(--bg-card);
   border: 1px solid var(--border-normal);
   border-radius: 6px;
   color: var(--text-body);
   font-size: 12px; padding: 5px 10px;
   display: inline-flex; align-items: center; gap: 4px;
+  transition: border-color .15s, color .15s;
 }
 .btn-act:hover { border-color: var(--border-hi); color: var(--border-hi); }
-.btn-act:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-act:disabled { opacity: .5; cursor: not-allowed; }
 
 /* ═══════ TAG: 已润色 ═══════ */
-.tag-refined { background: #F0FDF4; color: var(--success); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; }
+.tag-refined { background: rgba(34,197,94,.12); color: var(--success); font-size: 11px; font-weight: 500; padding: 2px 8px; border-radius: 4px; }
 
 /* ═══════ LOADING STEPS ═══════ */
 .loading-steps {
@@ -631,7 +739,7 @@ select:focus { border-color: var(--border-hi); }
   border: 1px solid var(--border-normal);
 }
 .loading-step.active {
-  color: var(--border-hi); background: #EFF6FF;
+  color: var(--blue); background: var(--selection-bg);
   border-color: var(--border-hi);
   font-weight: 600;
 }
@@ -642,44 +750,21 @@ select:focus { border-color: var(--border-hi); }
   padding-top: 12px;
   border-top: 1px solid var(--border-normal);
 }
-```
 
-Key changes:
-- Generate button: solid blue, hover darkens, disabled state uses border color
-- Result item number: blue color instead of muted
-- Tags: light bg (blue tint / purple tint) with dark text
-- btn-act: white bg + border instead of dark bg
-- Refined tag: green tint (#F0FDF4)
-- Loading steps: border added, active uses blue tint
+/* ═══════ INLINE STYLE REPLACEMENTS ═══════ */
+.char-count.warn { color: var(--warning); }
 
-- [ ] **Step 2: Run full test suite**
+.analysis-heading { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
+.analysis-grid { display: grid; grid-template-columns: "1fr 1fr"; gap: 8px; font-size: 13px; }
+.analysis-label { color: var(--text-muted); }
+.analysis-value { color: var(--text-body); }
+.score-high { color: var(--success); }
+.score-mid { color: var(--warning); }
 
-Run: `npx vitest run`
-Expected: All pass
-
-- [ ] **Step 3: Commit**
-
-```bash
-git add app/globals.css
-git commit -m "style: rewrite settings, generate button, right panel, result cards for Modern Tech Doc theme"
-```
-
----
-
-### Task 5: Rewrite History Drawer + History Page + Auth Page Styles + Responsive
-
-**Files:**
-- Modify: `app/globals.css` (history drawer through end of file)
-
-- [ ] **Step 1: Replace history drawer, history page, auth, and responsive styles**
-
-Replace from `/* ═══════ HISTORY DRAWER ═══════ */` through the end of file with:
-
-```css
 /* ═══════ HISTORY DRAWER ═══════ */
 .drawer-overlay {
   position: fixed; inset: 0;
-  background: rgba(15,23,42,.3);
+  background: rgba(0,0,0,.5);
   z-index: 100;
   display: flex; justify-content: flex-end;
 }
@@ -698,24 +783,16 @@ Replace from `/* ═══════ HISTORY DRAWER ═══════ */` 
   padding: 20px;
   border-bottom: 1px solid var(--border-normal);
 }
-.drawer-title { font-size: 18px; font-weight: 600; color: var(--text-primary); }
+.drawer-title { font-size: 18px; font-weight: 600; }
 .drawer-close {
   background: transparent; border: none; color: var(--text-muted);
   font-size: 18px; padding: 4px 8px; border-radius: 6px;
 }
 .drawer-close:hover { background: var(--bg-secondary); color: var(--text-primary); }
 
-.drawer-body {
-  flex: 1; overflow-y: auto; padding: 16px;
-}
-.drawer-empty {
-  text-align: center; color: var(--text-muted); padding: 60px 0;
-  font-size: 14px;
-}
-.drawer-footer {
-  padding: 16px 20px; border-top: 1px solid var(--border-normal);
-  text-align: center;
-}
+.drawer-body { flex: 1; overflow-y: auto; padding: 16px; }
+.drawer-empty { text-align: center; color: var(--text-muted); padding: 60px 0; font-size: 14px; }
+.drawer-footer { padding: 16px 20px; border-top: 1px solid var(--border-normal); text-align: center; }
 
 .history-item {
   background: var(--bg-secondary);
@@ -723,139 +800,59 @@ Replace from `/* ═══════ HISTORY DRAWER ═══════ */` 
   border-radius: 10px; margin-bottom: 10px;
   overflow: hidden;
 }
-.history-summary {
-  padding: 14px; cursor: pointer;
-  transition: background .15s;
-}
-.history-summary:hover { background: #F8FAFC; }
-
-.history-meta {
-  display: flex; align-items: center; gap: 8px;
-  font-size: 12px; color: var(--text-muted);
-  margin-bottom: 6px;
-}
-.history-time { color: var(--text-muted); }
+.history-summary { padding: 14px; cursor: pointer; transition: background .15s; }
+.history-summary:hover { background: var(--selection-bg); }
+.history-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
 .history-preview { font-size: 13px; color: var(--text-body); line-height: 1.4; }
 .history-actions { margin-top: 8px; }
-
-.history-detail {
-  padding: 14px;
-  border-top: 1px solid var(--border-normal);
-}
+.history-detail { padding: 14px; border-top: 1px solid var(--border-normal); }
 .history-full-content {
   font-size: 13px; color: var(--text-body);
-  background: var(--bg-secondary); border-radius: 8px;
-  border: 1px solid var(--border-normal);
-  padding: 12px; margin-bottom: 12px; line-height: 1.5;
+  background: var(--code-bg); border: 1px solid var(--border-normal);
+  border-radius: 8px; padding: 12px; margin-bottom: 12px; line-height: 1.5;
 }
 
 /* ═══════ HISTORY PAGE ═══════ */
-.history-loading,
-.history-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 60vh;
-  color: var(--text-muted);
-  gap: 16px;
+.history-loading, .history-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  min-height: 60vh; color: var(--text-muted); gap: 16px;
 }
 .history-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 24px; padding-bottom: 16px;
   border-bottom: 1px solid var(--border-normal);
 }
-.history-header-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-.history-back {
-  color: var(--text-muted);
-  text-decoration: none;
-  font-size: 14px;
-  transition: color .15s;
-}
+.history-header-left { display: flex; align-items: center; gap: 14px; }
+.history-back { color: var(--text-muted); text-decoration: none; font-size: 14px; transition: color .15s; }
 .history-back:hover { color: var(--text-primary); }
-.history-title { font-size: 24px; font-weight: 700; color: var(--text-primary); }
+.history-title { font-size: 24px; font-weight: 700; }
 .history-count {
-  font-size: 13px;
-  color: var(--text-muted);
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-normal);
-  padding: 3px 10px;
-  border-radius: 12px;
+  font-size: 13px; color: var(--text-muted);
+  background: var(--bg-secondary); border: 1px solid var(--border-normal);
+  padding: 3px 10px; border-radius: 12px;
 }
-.history-confirm {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
+.history-confirm { display: flex; align-items: center; gap: 8px; }
 .history-confirm-text { font-size: 13px; color: var(--warning); }
 .history-list { display: flex; flex-direction: column; gap: 12px; }
 .history-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-normal);
-  border-radius: var(--radius-card);
-  overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,.04);
+  background: var(--bg-card); border: 1px solid var(--border-normal);
+  border-radius: var(--radius-card); overflow: hidden;
 }
-.history-card-summary {
-  padding: 16px 20px;
-  cursor: pointer;
-  transition: background .15s;
-}
-.history-card-summary:hover { background: #F8FAFC; }
-.history-card-meta {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-.history-time { color: var(--border-hi); }
-.history-card-preview {
-  font-size: 14px;
-  color: var(--text-body);
-  line-height: 1.5;
-}
-.history-card-actions {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 10px;
-}
-.history-expand-hint {
-  font-size: 12px;
-  color: var(--text-placeholder);
-}
-.history-card-detail {
-  padding: 0 20px 16px;
-  border-top: 1px solid var(--border-normal);
-}
-.history-full-content {
-  font-size: 13px;
-  color: var(--text-body);
-  line-height: 1.6;
-  padding: 12px 0;
-  white-space: pre-wrap;
-}
-.history-more {
-  display: flex;
-  justify-content: center;
-  padding: 24px 0;
-}
+.history-card-summary { padding: 16px 20px; cursor: pointer; transition: background .15s; }
+.history-card-summary:hover { background: var(--selection-bg); }
+.history-card-meta { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-muted); margin-bottom: 8px; }
+.history-time { color: var(--blue); }
+.history-card-preview { font-size: 14px; color: var(--text-body); line-height: 1.5; }
+.history-card-actions { display: flex; align-items: center; justify-content: space-between; margin-top: 10px; }
+.history-expand-hint { font-size: 12px; color: var(--text-placeholder); }
+.history-card-detail { padding: 0 20px 16px; border-top: 1px solid var(--border-normal); }
+.history-full-content { font-size: 13px; color: var(--text-body); line-height: 1.6; padding: 12px 0; white-space: pre-wrap; }
+.history-more { display: flex; justify-content: center; padding: 24px 0; }
 
 /* ═══════ AUTH PAGES ═══════ */
 .auth-page {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   padding: 32px;
   background: var(--bg-secondary);
 }
@@ -864,107 +861,55 @@ Replace from `/* ═══════ HISTORY DRAWER ═══════ */` 
   border: 1px solid var(--border-normal);
   border-radius: 16px;
   padding: 48px 40px 40px;
-  width: 100%;
-  max-width: 420px;
+  width: 100%; max-width: 420px;
   text-align: center;
-  box-shadow: 0 4px 24px rgba(0,0,0,.08);
+  box-shadow: 0 4px 24px rgba(0,0,0,.1);
 }
-.auth-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 32px;
-}
+.auth-brand { display: flex; flex-direction: column; align-items: center; gap: 16px; margin-bottom: 32px; }
 .auth-logo {
   width: 56px; height: 56px;
-  background: var(--blue);
-  border-radius: 14px;
-  display: grid; place-items: center;
-  color: #fff;
-  box-shadow: 0 4px 16px rgba(37,99,235,.2);
+  background: var(--blue); border-radius: 14px;
+  display: grid; place-items: center; color: #fff;
+  box-shadow: 0 4px 16px rgba(59,130,246,.2);
   transition: transform .2s, box-shadow .2s;
 }
-.auth-logo:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(37,99,235,.3);
-}
+.auth-logo:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(59,130,246,.3); }
 .auth-brand-text { text-align: center; }
-.auth-title {
-  font-size: 26px; font-weight: 700;
-  margin-bottom: 6px; letter-spacing: -0.02em;
-  color: var(--text-primary);
-}
-.auth-subtitle {
-  font-size: 14px; color: var(--text-muted);
-  line-height: 1.5; max-width: 300px;
-  margin: 0 auto;
-}
+.auth-title { font-size: 26px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.02em; }
+.auth-subtitle { font-size: 14px; color: var(--text-muted); line-height: 1.5; max-width: 300px; margin: 0 auto; }
 .auth-error {
-  background: #FEF2F2;
-  border: 1px solid #FECACA;
-  color: #DC2626;
-  padding: 12px 16px;
-  border-radius: 10px;
-  font-size: 13px;
-  margin-bottom: 20px;
-  text-align: left;
+  background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.2);
+  color: #ef4444; padding: 12px 16px; border-radius: 10px;
+  font-size: 13px; margin-bottom: 20px; text-align: left;
 }
 .auth-form { text-align: left; }
 .auth-field { margin-bottom: 18px; }
-.auth-label {
-  display: block;
-  font-size: 13px; font-weight: 500;
-  color: var(--text-body);
-  margin-bottom: 8px;
-}
+.auth-label { display: block; font-size: 13px; font-weight: 500; color: var(--text-body); margin-bottom: 8px; }
 .auth-input {
-  width: 100%;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-normal);
-  border-radius: 8px;
-  color: var(--text-primary);
-  font-family: inherit; font-size: 15px;
-  padding: 12px 14px;
-  outline: none;
+  width: 100%; background: var(--code-bg);
+  border: 1px solid var(--border-normal); border-radius: 8px;
+  color: var(--text-primary); font-family: inherit; font-size: 15px;
+  padding: 12px 14px; outline: none;
   transition: border-color .2s, box-shadow .2s;
 }
 .auth-input::placeholder { color: var(--text-placeholder); }
-.auth-input:focus {
-  border-color: var(--border-hi);
-  box-shadow: 0 0 0 3px rgba(37,99,235,.1);
-}
+.auth-input:focus { border-color: var(--border-hi); box-shadow: 0 0 0 3px rgba(59,130,246,.1); }
 .auth-submit {
-  width: 100%;
-  height: 48px;
-  margin-top: 8px;
-  background: var(--blue);
-  border: none; border-radius: 10px;
-  color: #fff;
-  font-size: 15px; font-weight: 600;
-  cursor: pointer;
-  transition: background .15s, transform .15s;
+  width: 100%; height: 48px; margin-top: 8px;
+  background: var(--blue); border: none; border-radius: 10px;
+  color: #fff; font-size: 15px; font-weight: 600;
+  cursor: pointer; transition: opacity .15s, transform .15s;
   display: flex; align-items: center; justify-content: center;
 }
-.auth-submit:hover:not(:disabled) { background: #1D4ED8; transform: translateY(-1px); }
+.auth-submit:hover:not(:disabled) { opacity: .9; transform: translateY(-1px); }
 .auth-submit:active:not(:disabled) { transform: translateY(0); }
 .auth-submit:disabled { opacity: .5; cursor: not-allowed; transform: none; }
-.auth-submit-loading {
-  display: flex; align-items: center; gap: 8px;
-}
-.auth-spinner {
-  animation: auth-spin .8s linear infinite;
-}
-@keyframes auth-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
+.auth-submit-loading { display: flex; align-items: center; gap: 8px; }
+.auth-spinner { animation: auth-spin .8s linear infinite; }
+@keyframes auth-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 .auth-divider {
-  position: relative;
-  text-align: center;
-  margin: 24px 0 16px;
-  font-size: 13px;
-  color: var(--text-muted);
+  position: relative; text-align: center;
+  margin: 24px 0 16px; font-size: 13px; color: var(--text-muted);
 }
 .auth-divider::before, .auth-divider::after {
   content: ''; position: absolute;
@@ -975,30 +920,17 @@ Replace from `/* ═══════ HISTORY DRAWER ═══════ */` 
 .auth-divider::after  { right: 0; }
 .auth-alt-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 100%; padding: 12px;
-  border-radius: 8px;
-  border: 1px solid var(--border-normal);
-  background: var(--bg-secondary);
-  color: var(--text-body);
-  font-size: 14px; font-weight: 500;
-  text-align: center;
-  text-decoration: none;
-  cursor: pointer;
+  width: 100%; padding: 12px; border-radius: 8px;
+  border: 1px solid var(--border-normal); background: var(--bg-secondary);
+  color: var(--text-body); font-size: 14px; font-weight: 500;
+  text-align: center; text-decoration: none; cursor: pointer;
   transition: border-color .2s, background .2s, color .2s;
 }
-.auth-alt-btn:hover {
-  border-color: var(--border-hi);
-  background: #EFF6FF;
-  color: var(--border-hi);
-}
+.auth-alt-btn:hover { border-color: var(--border-hi); background: var(--selection-bg); color: var(--border-hi); }
 .auth-back-home {
   display: inline-flex; align-items: center; gap: 6px;
-  margin-top: 24px;
-  font-size: 13px;
-  color: var(--text-muted);
-  text-decoration: none;
-  cursor: pointer;
-  white-space: nowrap;
+  margin-top: 24px; font-size: 13px; color: var(--text-muted);
+  text-decoration: none; cursor: pointer; white-space: nowrap;
   transition: color .15s;
 }
 .auth-back-home:hover { color: var(--text-primary); }
@@ -1006,71 +938,27 @@ Replace from `/* ═══════ HISTORY DRAWER ═══════ */` 
 /* ═══════ RESPONSIVE: ≤768px ═══════ */
 @media (max-width: 768px) {
   .page { padding: 16px; }
-
-  /* Header 堆叠 */
-  .header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 16px;
-    border-bottom: none;
-  }
+  .header { flex-direction: column; align-items: flex-start; gap: 16px; border-bottom: none; }
   .header-right { width: 100%; flex-wrap: wrap; }
-
-  /* 主区域单栏 */
-  .main {
-    grid-template-columns: 1fr;
-  }
-
-  /* 卡片缩窄 */
-  .card { padding: 16px; box-shadow: none; }
-
-  /* 标题缩小 */
+  .main { grid-template-columns: 1fr; }
+  .card { padding: 16px; }
   .header-titles h1 { font-size: 22px; }
   .header-titles p  { font-size: 13px; }
-
-  /* STEP 1 textarea */
   textarea { height: 120px; }
-
-  /* Settings 2列变1列 */
   .settings-row { grid-template-columns: 1fr; }
-
-  /* 人格卡片缩窄 */
   .selected-persona { padding: 10px 12px; }
   .selected-persona-emoji { font-size: 22px; }
   .selected-persona-name { font-size: 13px; }
   .selected-persona-desc { font-size: 11px; }
   .selected-persona-change { font-size: 11px; padding: 4px 8px; }
-
-  /* 右面板最小高度 */
   .right-panel .card { min-height: auto; }
-
-  /* 历史页面 */
-  .history-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-    border-bottom: none;
-  }
+  .history-header { flex-direction: column; align-items: flex-start; gap: 12px; border-bottom: none; }
   .history-header-left { flex-wrap: wrap; }
   .history-title { font-size: 20px; }
-
-  /* 认证页 */
-  .auth-card {
-    padding: 32px 24px 28px;
-  }
+  .auth-card { padding: 32px 24px 28px; }
   .auth-title { font-size: 22px; }
 }
 ```
-
-Key changes:
-- Drawer overlay: lighter backdrop
-- Auth page: light gray bg (#F8FAFC) instead of dark with gradients
-- Auth card: white bg + subtle shadow, no backdrop-filter blur
-- Auth error: red tint bg + red text instead of dark red bg
-- Auth inputs: light gray bg, blue focus ring
-- Auth submit: solid blue, hover darkens
-- Auth alt button: light gray bg, blue hover
-- Responsive: removed shadow on mobile cards
 
 - [ ] **Step 2: Run full test suite**
 
@@ -1081,38 +969,21 @@ Expected: All pass
 
 ```bash
 git add app/globals.css
-git commit -m "style: rewrite history drawer, history page, auth pages, responsive for Modern Tech Doc theme"
+git commit -m "style: complete dual-theme styles for settings, results, history, auth, responsive"
 ```
 
 ---
 
-### Task 6: Clean Inline Styles in page.tsx
+### Task 5: Clean Inline Styles in page.tsx
 
 **Files:**
 - Modify: `app/page.tsx`
 
-- [ ] **Step 1: Write the failing test**
-
-Add to `__tests__/ui-spec.test.ts`:
-
-```ts
-// ========== 11. Inline Style 清零测试 ==========
-
-describe("inline style cleanup", () => {
-  it("no hardcoded dark-theme colors should remain in inline styles", () => {
-    const darkThemeColors = ["#0F172A", "#111827", "#1F2937", "#6366F1", "#64748B", "#CBD5E1", "#475569", "#F8FAFC"];
-    // These colors should NOT appear in JSX inline styles
-    // They should all be in CSS via variables
-    expect(darkThemeColors.length).toBeGreaterThan(0);
-  });
-});
-```
-
-- [ ] **Step 2: Remove inline styles from page.tsx**
+- [ ] **Step 1: Remove all inline color styles from page.tsx**
 
 In `app/page.tsx`, make these changes:
 
-**a) Line 202-203: char-count color — remove inline style, add CSS class**
+**a) Line ~202: char-count color**
 
 Replace:
 ```tsx
@@ -1126,7 +997,7 @@ With:
 <div className={`char-count${content.length > 1800 ? " warn" : ""}`}>
 ```
 
-**b) Line 288-291: btn-generate disabled style — remove inline style**
+**b) Line ~288: btn-generate disabled style**
 
 Replace:
 ```tsx
@@ -1149,7 +1020,7 @@ With:
 >
 ```
 
-**c) Line 425-426: ResultPanel analysis heading — remove inline style**
+**c) Line ~425: ResultPanel analysis heading**
 
 Replace:
 ```tsx
@@ -1160,7 +1031,7 @@ With:
 <h3 className="analysis-heading">
 ```
 
-**d) Line 428-439: ResultPanel analysis grid — remove inline styles**
+**d) Line ~428-439: ResultPanel analysis grid**
 
 Replace:
 ```tsx
@@ -1197,7 +1068,7 @@ With:
 </div>
 ```
 
-**e) Line 562: score color — remove inline style**
+**e) Line ~562: score color**
 
 Replace:
 ```tsx
@@ -1208,7 +1079,7 @@ With:
 热度 <strong className={`score-${score >= 80 ? "high" : "mid"}`}>{score}</strong> 🔥
 ```
 
-**f) Line 359: example heat score color — remove inline style**
+**f) Line ~359: example heat score**
 
 Replace:
 ```tsx
@@ -1219,37 +1090,21 @@ With:
 热度 <strong className="score-mid">86</strong> 🔥
 ```
 
-- [ ] **Step 3: Add new CSS classes for removed inline styles**
-
-Append to `app/globals.css` (before the responsive section):
-
-```css
-/* ═══════ INLINE STYLE REPLACEMENTS ═══════ */
-.char-count.warn { color: var(--warning); }
-
-.analysis-heading { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
-.analysis-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 13px; }
-.analysis-label { color: var(--text-muted); }
-.analysis-value { color: var(--text-body); }
-.score-high { color: var(--success); }
-.score-mid { color: var(--warning); }
-```
-
-- [ ] **Step 4: Run full test suite**
+- [ ] **Step 2: Run full test suite**
 
 Run: `npx vitest run`
 Expected: All pass
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
-git add app/page.tsx app/globals.css __tests__/ui-spec.test.ts
-git commit -m "refactor: remove inline styles from page.tsx, replace with CSS classes"
+git add app/page.tsx
+git commit -m "refactor: remove all inline color styles from page.tsx, replace with CSS classes"
 ```
 
 ---
 
-### Task 7: Final Verification
+### Task 6: Final Verification
 
 **Files:**
 - All changed files
@@ -1259,15 +1114,20 @@ git commit -m "refactor: remove inline styles from page.tsx, replace with CSS cl
 Run: `npx vitest run`
 Expected: All tests pass
 
-- [ ] **Step 2: Verify no dark-theme remnants in globals.css**
+- [ ] **Step 2: Verify no hardcoded theme colors in globals.css**
 
-Run: `grep -n "#050816\|#0F172A\|#111827\|#1F2937\|#6366F1" app/globals.css`
-Expected: No matches (all old dark-theme hex values removed)
+Run: `grep -n "#050816\|#0F172A\|#111827\|#1F2937\|#6366F1\|#F8FAFC\|#CBD5E1\|#475569" app/globals.css`
+Expected: No matches (old tokens gone, only in `[data-theme="light"]` block as valid light-theme values)
 
 - [ ] **Step 3: Verify no inline color styles in page.tsx**
 
 Run: `grep -n 'style={{.*color:' app/page.tsx`
-Expected: No matches (all inline color styles removed)
+Expected: No matches
+
+- [ ] **Step 4: Verify ThemeToggle is wired up**
+
+Run: `grep -n "ThemeToggle" app/page.tsx`
+Expected: Shows import line + usage in header
 
 ---
 
@@ -1277,18 +1137,19 @@ Expected: No matches (all inline color styles removed)
 
 | Spec Requirement | Task |
 |---|---|
-| Design Tokens 全部翻新 | Task 1 |
-| 所有组件视觉统一 (card/button/tag/badge/textarea/select/modal/drawer/auth) | Task 2-5 |
-| 对比度合规 | Task 1 (white bg + dark text = ≥ 15:1) |
-| 内联样式清零 | Task 6 |
-| 所有测试通过 | Task 7 |
+| 双主题 Design Tokens | Task 1 |
+| 所有组件双主题兼容 (无硬编码颜色) | Task 2-4 |
+| 主题切换功能 (按钮 + localStorage) | Task 1 (ThemeToggle) + Task 2 (wiring) |
+| 内联样式清零 | Task 5 |
+| 所有测试通过 | Task 6 |
 
 ### 2. Placeholder Scan
 
-No TBD/TODO/fill-in-later found. All code blocks contain complete CSS/TSX implementations.
+No TBD/TODO/fill-in-later found. All code blocks contain complete implementations.
 
 ### 3. Type Consistency
 
-- CSS variable names (`--bg-page`, `--text-primary`, etc.) consistent across all tasks
-- New CSS classes (`char-count.warn`, `analysis-heading`, `score-high`, `score-mid`) defined in Task 6, used in Task 6 JSX
+- CSS variables consistent across all tasks (e.g., `--glow-selected`, `--selection-bg`, `--code-bg`, `--tag-bg`, `--tag-border` used throughout)
+- ThemeToggle uses `"dark" | "light"` string literal type, matches `data-theme` attribute values
+- New CSS classes (`char-count.warn`, `analysis-*`, `score-*`) defined in Task 4, used in Task 5
 - No type mismatches found
