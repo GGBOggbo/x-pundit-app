@@ -198,10 +198,7 @@ export default function Home() {
               onChange={(e) => setContent(e.target.value)}
               placeholder="粘贴一条 X 推文、长文观点，或者想回复的内容..."
             />
-            <div
-              className="char-count"
-              style={{ color: content.length > 1800 ? "#F59E0B" : "#475569" }}
-            >
+            <div className={`char-count${content.length > 1800 ? " warn" : ""}`}>
               {content.length} / 2000 字
             </div>
             <div className="mini-btns">
@@ -285,10 +282,6 @@ export default function Home() {
               className="btn-generate"
               onClick={handleGenerate}
               disabled={loading || !content.trim()}
-              style={{
-                opacity: loading ? 0.7 : 1,
-                cursor: loading || !content.trim() ? "not-allowed" : "pointer",
-              }}
             >
               {loading ? "⏳ 生成中..." : `🚀 生成 ${count} 条真人感评论`}
             </button>
@@ -356,7 +349,7 @@ function EmptyState() {
           <span>调侃</span>
           <span className="dot" />
           <span>
-            热度 <strong style={{ color: "#F59E0B" }}>86</strong> 🔥
+            热度 <strong className="score-mid">86</strong> 🔥
           </span>
         </div>
       </div>
@@ -422,21 +415,21 @@ function ResultPanel({
     <>
       {/* 内容分析 */}
       <div style={{ marginBottom: 20 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600, color: "#64748B", marginBottom: 10 }}>
+        <h3 className="analysis-heading">
           📊 内容分析
         </h3>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, fontSize: 13 }}>
+        <div className="analysis-grid">
           <div>
-            <span style={{ color: "#64748B" }}>主题：</span>
-            <span style={{ color: "#CBD5E1" }}>{result.analysis.topic}</span>
+            <span className="analysis-label">主题：</span>
+            <span className="analysis-value">{result.analysis.topic}</span>
           </div>
           <div>
-            <span style={{ color: "#64748B" }}>情绪：</span>
-            <span style={{ color: "#CBD5E1" }}>{result.analysis.sentiment}</span>
+            <span className="analysis-label">情绪：</span>
+            <span className="analysis-value">{result.analysis.sentiment}</span>
           </div>
           <div style={{ gridColumn: "span 2" }}>
-            <span style={{ color: "#64748B" }}>核心观点：</span>
-            <span style={{ color: "#CBD5E1" }}>{result.analysis.coreOpinion}</span>
+            <span className="analysis-label">核心观点：</span>
+            <span className="analysis-value">{result.analysis.coreOpinion}</span>
           </div>
         </div>
       </div>
@@ -559,7 +552,7 @@ function CommentCard({
             <span className="tag tag-refined">已润色</span>
           )}
           <span className="tag-heat">
-            热度 <strong style={{ color: score >= 80 ? "#22C55E" : "#F59E0B" }}>{score}</strong> 🔥
+            热度 <strong className={`score-${score >= 80 ? "high" : "mid"}`}>{score}</strong> 🔥
           </span>
         </div>
         <div className="res-text">{comment.text}</div>

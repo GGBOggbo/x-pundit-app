@@ -769,6 +769,16 @@ select:focus { border-color: var(--border-hi); }
 }
 .auth-back-home:hover { color: var(--text-primary); }
 
+/* ═══════ INLINE STYLE REPLACEMENTS ═══════ */
+.char-count.warn { color: var(--warning); }
+
+.analysis-heading { font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 10px; }
+.analysis-grid { display: grid; grid-template-columns: "1fr 1fr"; gap: 8px; font-size: 13px; }
+.analysis-label { color: var(--text-muted); }
+.analysis-value { color: var(--text-body); }
+.score-high { color: var(--success); }
+.score-mid { color: var(--warning); }
+
 /* ═══════ RESPONSIVE: ≤768px ═══════ */
 @media (max-width: 768px) {
   .page { padding: 16px; }
