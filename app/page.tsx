@@ -5,6 +5,7 @@ import { personas } from "@/config/personas";
 import type { GenerateResponse, GeneratedComment, RefineRecord } from "@/types";
 import { createHistoryItem, getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
 import PersonaPickerModal from "./components/PersonaPickerModal";
+import ThemeToggle from "./components/ThemeToggle";
 
 const angleLabels: Record<string, string> = {
   agree: "赞同",
@@ -150,6 +151,7 @@ export default function Home() {
           </div>
         </div>
         <div className="header-right">
+          <ThemeToggle />
           {session ? (
             <>
               <a href="/history" className="btn-ghost" style={{ textDecoration: "none" }}>
