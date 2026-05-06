@@ -187,9 +187,9 @@ describe("responsive layout", () => {
     expect(mobileLayout).toContain("1fr");
   });
 
-  it("desktop layout should be two column (40% 1fr)", () => {
-    const desktopLayout = "grid-template-columns: 40% 1fr";
-    expect(desktopLayout).toContain("40%");
+  it("desktop layout should be two column (400px 1fr)", () => {
+    const desktopLayout = "grid-template-columns: 400px 1fr";
+    expect(desktopLayout).toContain("400px");
     expect(desktopLayout).toContain("1fr");
   });
 });
