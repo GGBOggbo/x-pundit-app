@@ -791,11 +791,11 @@ select:focus { border-color: var(--border-hi); }
   .settings-row { grid-template-columns: 1fr; }
 
   /* 人格卡片缩窄 */
-  .persona-grid { gap: 6px; }
-  .persona-card { padding: 8px; }
-  .persona-em   { font-size: 16px; }
-  .persona-name { font-size: 13px; }
-  .persona-sub  { font-size: 11px; }
+  .selected-persona { padding: 10px 12px; }
+  .selected-persona-emoji { font-size: 22px; }
+  .selected-persona-name { font-size: 13px; }
+  .selected-persona-desc { font-size: 11px; }
+  .selected-persona-change { font-size: 11px; padding: 4px 8px; }
 
   /* 右面板最小高度 */
   .right-panel .card { min-height: auto; }
