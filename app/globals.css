@@ -2,7 +2,7 @@
 
 @layer base {
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'PingFang SC',
+    font-family: var(--font-inter), 'PingFang SC',
                  'Noto Sans SC', 'Microsoft YaHei', sans-serif;
     background: var(--bg-page);
     color: var(--text-primary);
@@ -21,10 +21,10 @@
   --blue:          #2563EB;
   --text-primary:  #1F2937;
   --text-body:     #475569;
-  --text-muted:    #94A3B8;
-  --text-placeholder: #CBD5E1;
-  --success:       #16A34A;
-  --warning:       #D97706;
+  --text-muted:    #64748B;
+  --text-placeholder: #94A3B8;
+  --success:       #15803D;
+  --warning:       #B45309;
   --radius-card:   12px;
   --radius-btn:    8px;
   --btn-h:         48px;

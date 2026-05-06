@@ -1,50 +1,72 @@
 import { describe, it, expect } from "vitest";
 import { personas } from "@/config/personas";
+import fs from "fs";
+import path from "path";
 
 /**
  * TDD: 匹配最终设计稿 HTML 参考的测试
+ * Token 测试读取真实 CSS 文件，不是自断言硬编码值
  */
 
 // ========== 1. Design Tokens 颜色测试 ==========
 
 describe("design tokens match Modern Technical Doc style", () => {
-  const tokens = {
-    bgPage: "#FFFFFF",
-    bgCard: "#FFFFFF",
-    bgSecondary: "#F8FAFC",
-    borderNormal: "#E2E8F0",
-    borderHi: "#2563EB",
-    purple: "#7C3AED",
-    blue: "#2563EB",
-    textPrimary: "#1F2937",
-    textBody: "#475569",
-    textMuted: "#94A3B8",
-    textPlaceholder: "#CBD5E1",
-    success: "#16A34A",
-    warning: "#D97706",
+  // 从真实 CSS 文件读取 :root 变量
+  const cssPath = path.resolve(__dirname, "../app/globals.css");
+  const cssContent = fs.readFileSync(cssPath, "utf-8");
+
+  const expectedTokens: Record<string, string> = {
+    "--bg-page":       "#FFFFFF",
+    "--bg-card":       "#FFFFFF",
+    "--bg-secondary":  "#F8FAFC",
+    "--border-normal": "#E2E8F0",
+    "--border-hi":     "#2563EB",
+    "--purple":        "#7C3AED",
+    "--blue":          "#2563EB",
+    "--text-primary":  "#1F2937",
+    "--text-body":     "#475569",
+    "--text-muted":    "#64748B",
+    "--text-placeholder": "#94A3B8",
+    "--success":       "#15803D",
+    "--warning":       "#B45309",
   };
 
-  it("all tokens should be valid 6-digit hex", () => {
-    Object.values(tokens).forEach((c) => {
-      expect(c).toMatch(/^#[0-9A-Fa-f]{6}$/);
-    });
+  // 从 CSS 文件解析 :root 里的 CSS 变量
+  function extractCssVar(content: string, varName: string): string | null {
+    const regex = new RegExp(`${varName.replace("-", "\\-")}\\s*:\\s*([^;]+)`);
+    const match = content.match(regex);
+    return match ? match[1].trim() : null;
+  }
+
+  it("all expected tokens should exist in globals.css", () => {
+    for (const varName of Object.keys(expectedTokens)) {
+      const value = extractCssVar(cssContent, varName);
+      expect(value).not.toBeNull();
+    }
   });
 
-  it("bgCard should be white (#FFFFFF) per new design", () => {
-    expect(tokens.bgCard).toBe("#FFFFFF");
+  it("bg-card should be white (#FFFFFF) per new design", () => {
+    expect(extractCssVar(cssContent, "--bg-card")).toBe("#FFFFFF");
   });
 
-  it("borderNormal should be slate-200 (#E2E8F0) per new design", () => {
-    expect(tokens.borderNormal).toBe("#E2E8F0");
+  it("border-normal should be slate-200 (#E2E8F0) per new design", () => {
+    expect(extractCssVar(cssContent, "--border-normal")).toBe("#E2E8F0");
   });
 
-  it("textPrimary should be dark (#1F2937) per new design", () => {
-    expect(tokens.textPrimary).toBe("#1F2937");
+  it("text-primary should be dark (#1F2937) per new design", () => {
+    expect(extractCssVar(cssContent, "--text-primary")).toBe("#1F2937");
   });
 
   it("accent colors should remain blue (#2563EB) and purple (#7C3AED)", () => {
-    expect(tokens.blue).toBe("#2563EB");
-    expect(tokens.purple).toBe("#7C3AED");
+    expect(extractCssVar(cssContent, "--blue")).toBe("#2563EB");
+    expect(extractCssVar(cssContent, "--purple")).toBe("#7C3AED");
+  });
+
+  it("all CSS token values should match expected tokens", () => {
+    for (const [varName, expected] of Object.entries(expectedTokens)) {
+      const actual = extractCssVar(cssContent, varName);
+      expect(actual, `CSS variable ${varName}`).toBe(expected);
+    }
   });
 });
 
