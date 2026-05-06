@@ -22,14 +22,14 @@ export interface Persona {
   id: string;
   name: string;
   emoji: string;
-  language: "zh" | "en" | "both";
+  language: "zh" | "en" | "mixed";
   description: string;
-  tone: string[];
-  avoid: string[];
+  tags: string[];
   lengthRange: { min: number; max: number };
-  catchphrases: string[];
   examples: string[];
   systemPrompt: string;
+  isBuiltIn: boolean;
+  isPro?: boolean;
 }
 
 export interface RefineRecord {
