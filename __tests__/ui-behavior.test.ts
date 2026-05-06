@@ -10,28 +10,16 @@ import type { GeneratedComment } from "@/types";
 // ========== 1. 人格卡片描述测试 ==========
 
 describe("persona card descriptions", () => {
-  const shortDescriptions: Record<string, string> = {
-    tieba_bro: "直接 / 玩梗 / 冲浪感",
-    zhihu_expert: "理性 / 分析 / 有结论",
-    weibo_hot: "共鸣 / 金句 / 情绪强",
-    yin_yang: "反讽 / 话里有话",
-    warm_support: "温柔 / 支持 / 正能量",
-    duan_zi: "幽默 / 神转折",
-    tech_bro: "AI / Startup / Ship it",
-    gen_z: "短句 / 梗感 / 英文网感",
-    hu_chenfeng: "定性 / 品牌论 / 购买力",
-  };
-
-  it("every persona should have a short description mapping", () => {
+  it("every persona should have a non-empty description", () => {
     for (const p of personas) {
-      expect(shortDescriptions[p.id]).toBeDefined();
-      expect(shortDescriptions[p.id].length).toBeGreaterThan(0);
+      expect(p.description).toBeDefined();
+      expect(p.description.length).toBeGreaterThan(0);
     }
   });
 
-  it("short descriptions should be under 20 chars for compact card display", () => {
-    for (const id of Object.keys(shortDescriptions)) {
-      expect(shortDescriptions[id].length).toBeLessThanOrEqual(30);
+  it("descriptions should be short enough for card display (under 30 chars)", () => {
+    for (const p of personas) {
+      expect(p.description.length).toBeLessThanOrEqual(30);
     }
   });
 });
