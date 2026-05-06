@@ -99,3 +99,95 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "保存失败，请重试" }, { status: 500 });
   }
 }
+
+// ========== GET 列表 ==========
+
+interface HistoryRow {
+  id: string;
+  user_id: string;
+  content: string;
+  content_preview: string;
+  persona_id: string;
+  persona_name: string;
+  persona_emoji: string;
+  comment_count: number;
+  comments: string;
+  analysis: string;
+  created_at: number;
+}
+
+function rowToHistoryItem(row: HistoryRow) {
+  return {
+    id: row.id,
+    userId: row.user_id,
+    content: row.content,
+    contentPreview: row.content_preview,
+    personaId: row.persona_id,
+    personaName: row.persona_name,
+    personaEmoji: row.persona_emoji,
+    commentCount: row.comment_count,
+    comments: JSON.parse(row.comments),
+    analysis: JSON.parse(row.analysis),
+    createdAt: row.created_at,
+  };
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const url = new URL(req.url);
+    const page = Math.max(parseInt(url.searchParams.get("page") || "1"), 1);
+    const pageSize = Math.min(
+      Math.max(parseInt(url.searchParams.get("pageSize") || "20"), 1),
+      100
+    );
+    const offset = (page - 1) * pageSize;
+
+    const db = getDb();
+
+    const total = (
+      db
+        .prepare("SELECT COUNT(*) as count FROM history WHERE user_id = ?")
+        .get(user.id) as { count: number }
+    ).count;
+
+    const rows = db
+      .prepare(
+        "SELECT * FROM history WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?"
+      )
+      .all(user.id, pageSize, offset) as HistoryRow[];
+
+    const items = rows.map(rowToHistoryItem);
+
+    return NextResponse.json({
+      items,
+      total,
+      hasMore: offset + pageSize < total,
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+    console.error("获取历史失败:", error);
+    return NextResponse.json({ error: "获取失败" }, { status: 500 });
+  }
+}
+
+// ========== DELETE 清空全部 ==========
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const user = await requireAuth();
+    const db = getDb();
+    const result = db
+      .prepare("DELETE FROM history WHERE user_id = ?")
+      .run(user.id);
+    return NextResponse.json({ deleted: result.changes });
+  } catch (error) {
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "请先登录" }, { status: 401 });
+    }
+    console.error("清空历史失败:", error);
+    return NextResponse.json({ error: "清空失败" }, { status: 500 });
+  }
+}
