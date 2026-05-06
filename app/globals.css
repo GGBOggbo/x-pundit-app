@@ -618,7 +618,7 @@ select:focus { border-color: var(--border-hi); }
   width: 100%; padding: 12px;
   border-radius: 10px;
   border: 1px solid rgba(148,163,184,.15);
-  background: transparent;
+  background: rgba(17,24,39,.5);
   color: var(--text-body);
   font-size: 14px; font-weight: 500;
   text-align: center;
@@ -628,7 +628,7 @@ select:focus { border-color: var(--border-hi); }
 }
 .auth-alt-btn:hover {
   border-color: rgba(99,102,241,.4);
-  background: rgba(99,102,241,.06);
+  background: rgba(99,102,241,.1);
   color: var(--text-primary);
 }
 .auth-back-home {
@@ -638,6 +638,7 @@ select:focus { border-color: var(--border-hi); }
   color: var(--text-muted);
   text-decoration: none;
   cursor: pointer;
+  white-space: nowrap;
   transition: color .15s;
 }
 .auth-back-home:hover { color: var(--text-primary); }
