@@ -2,18 +2,23 @@ import { describe, it, expect } from "vitest";
 import { personas, getPersonaById, getPersonasByLanguage } from "@/config/personas";
 
 describe("personas config", () => {
-  it("should have 9 personas total", () => {
-    expect(personas).toHaveLength(9);
+  it("should have 11 personas total", () => {
+    expect(personas).toHaveLength(12);
   });
 
-  it("should have 7 Chinese personas", () => {
+  it("should have 8 Chinese personas", () => {
     const zh = personas.filter((p) => p.language === "zh");
-    expect(zh).toHaveLength(7);
+    expect(zh).toHaveLength(8);
   });
 
   it("should have 2 English personas", () => {
     const en = personas.filter((p) => p.language === "en");
     expect(en).toHaveLength(2);
+  });
+
+  it("should have 2 mixed-language personas", () => {
+    const mixed = personas.filter((p) => p.language === "mixed");
+    expect(mixed).toHaveLength(2);
   });
 
   it("every persona should have required fields", () => {

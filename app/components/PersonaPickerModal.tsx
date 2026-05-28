@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { personas } from "@/config/personas";
 
-const FILTER_TAGS = ["全部", "搞笑", "犀利", "专业", "温暖", "英文"];
+const FILTER_TAGS = ["全部", "网友", "专业"];
+const PROFESSIONAL_IDS = ["hu_chenfeng", "zhang_xuefeng", "steve_jobs", "elon_musk"];
 
 interface PersonaPickerModalProps {
   open: boolean;
@@ -26,8 +27,11 @@ export default function PersonaPickerModal({
   const keyword = search.trim().toLowerCase();
 
   const filtered = personas.filter((p) => {
+    const isProfessional = PROFESSIONAL_IDS.includes(p.id);
     const matchesTag =
-      activeTag === "全部" || p.tags.includes(activeTag);
+      activeTag === "全部" ||
+      (activeTag === "专业" && isProfessional) ||
+      (activeTag === "网友" && !isProfessional);
 
     const matchesSearch =
       !keyword ||

@@ -1,20 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useReducer, useRef } from "react";
 import { personas } from "@/config/personas";
 import type { GenerateResponse, GeneratedComment, RefineRecord } from "@/types";
 import { createHistoryItem, getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
 import PersonaPickerModal from "./components/PersonaPickerModal";
 import ThemeToggle from "./components/ThemeToggle";
+import CommentCard from "./components/CommentCard";
+import ToastContainer, { showToast } from "./components/Toast";
 
-const angleLabels: Record<string, string> = {
-  agree: "赞同",
-  question: "质疑",
-  joke: "调侃",
-  supplement: "补充",
-  empathy: "共鸣",
-  sarcasm: "阴阳",
-};
+// ========== 状态管理 ==========
+
+type GenerationStep = "idle" | "analyzing" | "generating" | "ranking" | "done";
+
+interface GenerateState {
+  step: GenerationStep;
+  error: string | null;
+}
+
+type GenerateAction =
+  | { type: "START" }
+  | { type: "SET_STEP"; step: GenerationStep }
+  | { type: "ERROR"; error: string }
+  | { type: "RESET" };
+
+function generateReducer(state: GenerateState, action: GenerateAction): GenerateState {
+  switch (action.type) {
+    case "START":
+      return { step: "analyzing", error: null };
+    case "SET_STEP":
+      return { ...state, step: action.step };
+    case "ERROR":
+      return { ...state, error: action.error };
+    case "RESET":
+      return { step: "idle", error: null };
+    default:
+      return state;
+  }
+}
+
+// ========== 常量 ==========
 
 const features = [
   { icon: "🌀", name: "多角度评论", desc: "不同视角切入" },
@@ -23,18 +48,22 @@ const features = [
   { icon: "📋", name: "一键复制", desc: "快速复制使用" },
 ];
 
+// ========== 主页面 ==========
+
 export default function Home() {
   const [content, setContent] = useState("");
   const [personaId, setPersonaId] = useState("tieba_bro");
   const [count, setCount] = useState(5);
   const [language, setLanguage] = useState<"auto" | "zh" | "en">("auto");
-  const [generationStep, setGenerationStep] = useState<"idle" | "analyzing" | "generating" | "ranking" | "done">("idle");
-  const [loading, setLoading] = useState(false);
+  const [genState, genDispatch] = useReducer(generateReducer, { step: "idle", error: null });
   const [result, setResult] = useState<GenerateResponse | null>(null);
   const [resultPersona, setResultPersona] = useState<{ name: string; emoji: string } | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [session, setSession] = useState<{ user: { id: string; email: string } } | null>(null);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  const loading = genState.step !== "idle";
 
   useEffect(() => {
     fetch("/api/auth/session")
@@ -42,7 +71,6 @@ export default function Home() {
       .then((data) => {
         if (data?.user?.id) {
           setSession(data);
-          // 首次登录后迁移 localStorage
           const localItems = getLocalHistory();
           if (localItems.length > 0) {
             migrateLocalHistory(localItems).then((result) => {
@@ -54,48 +82,101 @@ export default function Home() {
       .catch(() => {});
   }, []);
 
+  // 组件卸载时取消进行中的请求
+  useEffect(() => {
+    return () => {
+      abortControllerRef.current?.abort();
+    };
+  }, []);
+
   const handleGenerate = async () => {
     if (!content.trim()) return;
+
+    // 取消之前的请求
+    abortControllerRef.current?.abort();
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     const currentPersona = personas.find((p) => p.id === personaId)!;
-    setLoading(true);
     setResult(null);
     setResultPersona(null);
-    setGenerationStep("analyzing");
+    genDispatch({ type: "START" });
+
     try {
       const res = await fetch("/api/comments", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, personaId, count, language }),
+        signal: controller.signal,
       });
-      const data = await res.json();
-      if (res.ok) {
-        setGenerationStep("done");
-        setResult(data);
-        setResultPersona({ name: currentPersona.name, emoji: currentPersona.emoji });
-        // 已登录则保存到后端
-        if (session?.user?.id) {
-          try {
-            await createHistoryItem({
-              content,
-              personaId,
-              personaName: currentPersona.name,
-              personaEmoji: currentPersona.emoji,
-              comments: data.comments,
-              analysis: data.analysis,
-            });
-          } catch {
-            // 保存失败不影响展示
+
+      if (!res.ok) {
+        const data = await res.json();
+        showToast(data.error || "生成失败", "error");
+        genDispatch({ type: "RESET" });
+        return;
+      }
+
+      const reader = res.body!.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop()!;
+
+        for (const chunk of parts) {
+          const line = chunk.trim();
+          if (!line.startsWith("data: ")) continue;
+          const event = JSON.parse(line.slice(6));
+
+          if (event.step === "done") {
+            genDispatch({ type: "SET_STEP", step: "done" });
+            setResult(event.result);
+            setResultPersona({ name: currentPersona.name, emoji: currentPersona.emoji });
+            if (session?.user?.id) {
+              try {
+                await createHistoryItem({
+                  content,
+                  personaId,
+                  personaName: currentPersona.name,
+                  personaEmoji: currentPersona.emoji,
+                  comments: event.result.comments,
+                  analysis: event.result.analysis,
+                });
+              } catch {
+                // 保存失败不影响展示
+              }
+            }
+          } else if (event.step === "error") {
+            showToast(event.error || "生成失败", "error");
+            genDispatch({ type: "RESET" });
+          } else {
+            genDispatch({ type: "SET_STEP", step: event.step });
           }
         }
-      } else {
-        alert(data.error || "生成失败");
       }
-    } catch {
-      alert("网络错误，请重试");
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") {
+        // 用户取消，不显示错误
+        return;
+      }
+      showToast("网络错误，请重试", "error");
+      genDispatch({ type: "RESET" });
     } finally {
-      setLoading(false);
-      setGenerationStep("idle");
+      if (!controller.signal.aborted) {
+        genDispatch({ type: "RESET" });
+      }
     }
+  };
+
+  const handleCancel = () => {
+    abortControllerRef.current?.abort();
+    genDispatch({ type: "RESET" });
   };
 
   const handleCopy = async (text: string, index: number) => {
@@ -137,6 +218,8 @@ export default function Home() {
 
   return (
     <div className="page">
+      <ToastContainer />
+
       {/* ══ HEADER ══ */}
       <header className="header">
         <div className="header-left">
@@ -152,6 +235,9 @@ export default function Home() {
         </div>
         <div className="header-right">
           <ThemeToggle />
+          <a href="/generate-tweets" className="btn-ghost" style={{ textDecoration: "none" }}>
+            ✍️ 推文生成
+          </a>
           {session ? (
             <>
               <a href="/history" className="btn-ghost" style={{ textDecoration: "none" }}>
@@ -282,12 +368,14 @@ export default function Home() {
             </div>
             <button
               className="btn-generate"
-              onClick={handleGenerate}
-              disabled={loading || !content.trim()}
+              onClick={loading ? handleCancel : handleGenerate}
+              disabled={!loading && !content.trim()}
             >
-              {loading ? "⏳ 生成中..." : `🚀 生成 ${count} 条真人感评论`}
+              {loading ? "⏹ 取消生成" : `🚀 生成 ${count} 条真人感评论`}
             </button>
-            <div className="gen-note">预计消耗 1 次生成额度</div>
+            <div className="gen-note">
+              {loading ? "生成中，点击可取消" : "预计消耗 1 次生成额度"}
+            </div>
           </div>
         </div>
 
@@ -297,7 +385,7 @@ export default function Home() {
             <div className="panel-title">✨ 生成结果预览</div>
 
             {!result && !loading && <EmptyState />}
-            {loading && <LoadingState step={generationStep} />}
+            {loading && <LoadingState step={genState.step} />}
             {result && resultPersona && (
               <ResultPanel
                 result={result}
@@ -480,123 +568,5 @@ function ResultPanel({
         </button>
       </div>
     </>
-  );
-}
-
-// ========== 评论卡片 ==========
-function CommentCard({
-  index,
-  comment,
-  personaName,
-  personaId,
-  originalContent,
-  isCopied,
-  readOnly,
-  onCopy,
-  onRefined,
-}: {
-  index: number;
-  comment: GeneratedComment;
-  personaName: string;
-  personaId?: string;
-  originalContent?: string;
-  isCopied: boolean;
-  readOnly?: boolean;
-  onCopy: () => void;
-  onRefined?: (index: number, refined: string, record: RefineRecord) => void;
-}) {
-  const [refiningType, setRefiningType] = useState<"colloquial" | "sharp" | null>(null);
-  const score = comment.score ?? 0;
-
-  async function handleRefine(type: "colloquial" | "sharp") {
-    if (!personaId || !originalContent || !onRefined) return;
-    setRefiningType(type);
-    try {
-      const res = await fetch("/api/refine", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          comment: comment.text,
-          originalContent,
-          personaId,
-          refineType: type,
-        }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        const record: RefineRecord = {
-          type,
-          before: comment.text,
-          after: data.refined,
-          createdAt: Date.now(),
-        };
-        onRefined(index, data.refined, record);
-      } else {
-        alert(data.error || "润色失败");
-      }
-    } catch {
-      alert("网络错误，请重试");
-    } finally {
-      setRefiningType(null);
-    }
-  }
-
-  return (
-    <div className="result-item">
-      <span className="res-num">{index + 1}</span>
-      <div className="res-body">
-        <div className="res-tags">
-          <span className="tag tag-p">{personaName}</span>
-          <span className="tag tag-t">
-            {angleLabels[comment.angle] || comment.angle}
-          </span>
-          {comment.originalText && (
-            <span className="tag tag-refined">已润色</span>
-          )}
-          <span className="tag-heat">
-            热度 <strong className={`score-${score >= 80 ? "high" : "mid"}`}>{score}</strong> 🔥
-          </span>
-        </div>
-        <div className="res-text">{comment.text}</div>
-        <div className="res-actions">
-          <button className="btn-act" onClick={onCopy}>
-            {isCopied ? "✅ 已复制" : "📋 复制"}
-          </button>
-          {comment.originalText && onRefined && (
-            <button
-              className="btn-act"
-              onClick={() => {
-                onRefined(index, comment.originalText!, {
-                  type: "colloquial",
-                  before: comment.text,
-                  after: comment.originalText!,
-                  createdAt: Date.now(),
-                });
-              }}
-            >
-              ↩ 还原
-            </button>
-          )}
-          {!readOnly && (
-            <>
-              <button
-                className="btn-act"
-                disabled={!!refiningType}
-                onClick={() => handleRefine("colloquial")}
-              >
-                {refiningType === "colloquial" ? "⏳ 润色中..." : "再口语一点"}
-              </button>
-              <button
-                className="btn-act"
-                disabled={!!refiningType}
-                onClick={() => handleRefine("sharp")}
-              >
-                {refiningType === "sharp" ? "⏳ 润色中..." : "更犀利"}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-    </div>
   );
 }

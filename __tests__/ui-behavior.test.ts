@@ -208,36 +208,58 @@ describe("batch copy", () => {
 // ========== 10. Persona Picker Modal 逻辑测试 ==========
 
 describe("persona picker filter logic", () => {
+  const PROFESSIONAL_IDS = ["hu_chenfeng", "zhang_xuefeng"];
+
   const mockPersonas = [
-    { id: "a", name: "Foo", tags: ["搞笑", "社交"], language: "zh", description: "desc a" },
-    { id: "b", name: "Bar", tags: ["专业", "英文"], language: "en", description: "desc b" },
-    { id: "c", name: "Baz", tags: ["温暖"], language: "zh", description: "desc c" },
+    { id: "tieba_bro", name: "贴吧老哥", tags: ["搞笑", "犀利", "社交"], language: "zh", description: "desc a" },
+    { id: "zhihu_expert", name: "知乎大V", tags: ["专业", "分析"], language: "zh", description: "desc b" },
+    { id: "hu_chenfeng", name: "户晨风", tags: ["专业", "犀利", "中文"], language: "zh", description: "desc c" },
+    { id: "zhang_xuefeng", name: "张雪峰", tags: ["专业", "犀利", "中文"], language: "zh", description: "desc d" },
   ];
 
-  const filterTags = ["全部", "搞笑", "犀利", "专业", "温暖", "英文"];
+  const filterTags = ["全部", "网友", "专业"];
 
-  it("filter tags should include expected categories", () => {
-    expect(filterTags).toContain("全部");
-    expect(filterTags).toContain("搞笑");
-    expect(filterTags).toContain("英文");
+  it("filter tags should be 全部/网友/专业", () => {
+    expect(filterTags).toEqual(["全部", "网友", "专业"]);
   });
 
-  it("filtering by tag '搞笑' should return matching personas", () => {
-    const filtered = mockPersonas.filter((p) => p.tags.includes("搞笑"));
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].id).toBe("a");
-  });
-
-  it("filtering by tag '全部' should return all personas", () => {
+  it("filtering by '全部' should return all personas", () => {
     const activeTag = "全部";
-    const filtered = mockPersonas.filter(
-      (p) => activeTag === "全部" || p.tags.includes(activeTag)
-    );
-    expect(filtered).toHaveLength(3);
+    const filtered = mockPersonas.filter((p) => {
+      const isProfessional = PROFESSIONAL_IDS.includes(p.id);
+      return activeTag === "全部" ||
+        (activeTag === "专业" && isProfessional) ||
+        (activeTag === "网友" && !isProfessional);
+    });
+    expect(filtered).toHaveLength(4);
+  });
+
+  it("filtering by '专业' should return 户晨风 and 张雪峰", () => {
+    const activeTag = "专业";
+    const filtered = mockPersonas.filter((p) => {
+      const isProfessional = PROFESSIONAL_IDS.includes(p.id);
+      return activeTag === "全部" ||
+        (activeTag === "专业" && isProfessional) ||
+        (activeTag === "网友" && !isProfessional);
+    });
+    expect(filtered).toHaveLength(2);
+    expect(filtered.map((p) => p.id)).toEqual(["hu_chenfeng", "zhang_xuefeng"]);
+  });
+
+  it("filtering by '网友' should return all except professionals", () => {
+    const activeTag = "网友";
+    const filtered = mockPersonas.filter((p) => {
+      const isProfessional = PROFESSIONAL_IDS.includes(p.id);
+      return activeTag === "全部" ||
+        (activeTag === "专业" && isProfessional) ||
+        (activeTag === "网友" && !isProfessional);
+    });
+    expect(filtered).toHaveLength(2);
+    expect(filtered.every((p) => !PROFESSIONAL_IDS.includes(p.id))).toBe(true);
   });
 
   it("search by name should be case-insensitive", () => {
-    const keyword = "bar";
+    const keyword = "贴吧";
     const filtered = mockPersonas.filter(
       (p) =>
         p.name.toLowerCase().includes(keyword) ||
@@ -245,18 +267,6 @@ describe("persona picker filter logic", () => {
         p.tags.some((t) => t.toLowerCase().includes(keyword))
     );
     expect(filtered).toHaveLength(1);
-    expect(filtered[0].id).toBe("b");
-  });
-
-  it("search by tag should work", () => {
-    const keyword = "温暖";
-    const filtered = mockPersonas.filter(
-      (p) =>
-        p.name.toLowerCase().includes(keyword) ||
-        p.description.toLowerCase().includes(keyword) ||
-        p.tags.some((t) => t.toLowerCase().includes(keyword))
-    );
-    expect(filtered).toHaveLength(1);
-    expect(filtered[0].id).toBe("c");
+    expect(filtered[0].id).toBe("tieba_bro");
   });
 });

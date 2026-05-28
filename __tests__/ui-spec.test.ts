@@ -196,7 +196,7 @@ describe("comment card action buttons", () => {
 
 describe("persona card structure", () => {
   it("personas config should have 9 entries", () => {
-    expect(personas).toHaveLength(9);
+    expect(personas).toHaveLength(12);
   });
 
   it("each persona should have emoji, name, description, tags", () => {
@@ -254,8 +254,10 @@ describe("modal UI structure", () => {
   });
 
   it("filter tags should match expected list", () => {
-    const filterTags = ["全部", "搞笑", "犀利", "专业", "温暖", "英文"];
-    expect(filterTags).toHaveLength(6);
+    const filterTags = ["全部", "网友", "专业"];
+    expect(filterTags).toHaveLength(3);
     expect(filterTags[0]).toBe("全部");
+    expect(filterTags[1]).toBe("网友");
+    expect(filterTags[2]).toBe("专业");
   });
 });

@@ -6,52 +6,77 @@ import { generateComments } from "@/lib/ai/generateComments";
 import { rankAndPolishComments } from "@/lib/ai/rankAndPolish";
 
 export async function POST(req: NextRequest) {
+  let body: GenerateRequest;
   try {
-    const body: GenerateRequest = await req.json();
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "无效请求" }, { status: 400 });
+  }
 
-    if (!body.content?.trim()) {
-      return NextResponse.json(
-        { error: "content 不能为空" },
-        { status: 400 }
-      );
-    }
-
-    const persona = getPersonaById(body.personaId);
-    if (!persona) {
-      return NextResponse.json(
-        { error: `未知人格: ${body.personaId}` },
-        { status: 400 }
-      );
-    }
-
-    const count = Math.min(Math.max(body.count || 5, 1), 10);
-
-    const analysis = await analyzeContent(body.content, body.language);
-
-    const rawComments = await generateComments(
-      body.content,
-      analysis,
-      persona,
-      count
-    );
-
-    const rankedComments = await rankAndPolishComments(
-      rawComments,
-      persona,
-      body.content
-    );
-
-    const response: GenerateResponse = {
-      analysis,
-      comments: rankedComments,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error("生成失败:", error);
+  if (!body.content?.trim()) {
     return NextResponse.json(
-      { error: "生成失败，请重试" },
-      { status: 500 }
+      { error: "content 不能为空" },
+      { status: 400 }
     );
   }
+
+  const persona = getPersonaById(body.personaId);
+  if (!persona) {
+    return NextResponse.json(
+      { error: `未知人格: ${body.personaId}` },
+      { status: 400 }
+    );
+  }
+
+  const count = Math.min(Math.max(body.count || 5, 1), 10);
+
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      function send(data: object) {
+        controller.enqueue(
+          encoder.encode(`data: ${JSON.stringify(data)}\n\n`)
+        );
+      }
+
+      try {
+        send({ step: "analyzing" });
+        const analysis = await analyzeContent(body.content, body.language);
+
+        send({ step: "generating" });
+        const rawComments = await generateComments(
+          body.content,
+          analysis,
+          persona,
+          count
+        );
+
+        send({ step: "ranking" });
+        const rankedComments = await rankAndPolishComments(
+          rawComments,
+          persona,
+          body.content
+        );
+
+        const result: GenerateResponse = {
+          analysis,
+          comments: rankedComments,
+        };
+        send({ step: "done", result });
+        controller.close();
+      } catch (error) {
+        console.error("生成失败:", error);
+        send({ step: "error", error: "生成失败，请重试" });
+        controller.close();
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "Content-Type": "text/event-stream",
+      "Cache-Control": "no-cache",
+      Connection: "keep-alive",
+    },
+  });
 }
