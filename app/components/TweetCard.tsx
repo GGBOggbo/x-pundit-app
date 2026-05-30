@@ -59,10 +59,10 @@ export default function TweetCard({
   }
 
   return (
-    <div className="result-item">
+    <div className="result-item result-card-premium">
       <span className="res-num">{index + 1}</span>
-      <div className="res-body">
-        <div className="res-tags">
+      <div className="res-body result-card-copy">
+        <div className="res-tags result-card-top">
           <span className="tag tag-p">{personaName}</span>
           <span className="tag tag-t">{tweet.topic}</span>
           {tweet.originalText && (

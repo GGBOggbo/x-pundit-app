@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { TweetGenerateRequest, TweetGenerateResponse } from "@/types/tweet";
 import { getPersonaById } from "@/config/personas";
-import { parseTweets, detectLanguage } from "@/lib/tweets/parseTweets";
+import { detectLanguage } from "@/lib/tweets/parseTweets";
 import { analyzeUserStyle } from "@/lib/tweets/analyzeStyle";
 import { generateTweets } from "@/lib/tweets/generateTweets";
 

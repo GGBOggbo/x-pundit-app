@@ -47,7 +47,10 @@ describe("tweet generation E2E flow", () => {
     };
     const prompt = buildGenerateTweetsPrompt(
       style,
-      { name: "贴吧老哥", systemPrompt: "你是贴吧老哥" } as any,
+      {
+        name: "贴吧老哥",
+        systemPrompt: "你是贴吧老哥",
+      },
       3
     );
     expect(prompt).toContain("直接");

@@ -1,9 +1,14 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { DEFAULT_AI_MODEL, getAiRuntimeConfig } from "@/lib/config/runtime";
 
-const client = new Anthropic({
-  apiKey: process.env.AI_API_KEY!,
-  baseURL: process.env.AI_BASE_URL || "https://open.bigmodel.cn/api/anthropic",
-});
+function getClient() {
+  const config = getAiRuntimeConfig();
+
+  return new Anthropic({
+    apiKey: config.apiKey,
+    baseURL: config.baseURL,
+  });
+}
 
 const DEFAULT_THINKING_BUDGET = 4096;
 const DEFAULT_MAX_TOKENS = 32000;
@@ -25,7 +30,7 @@ export function buildMessageParams(
   const maxTokens = useThinking && requestedMax <= budget ? budget + requestedMax : requestedMax;
 
   return {
-    model: options?.model || process.env.AI_MODEL || "claude-3-5-sonnet-20241022",
+    model: options?.model || process.env.AI_MODEL || DEFAULT_AI_MODEL,
     max_tokens: maxTokens,
     messages: [{ role: "user" as const, content: prompt }],
     ...(useThinking && {
@@ -46,6 +51,7 @@ export async function chatCompletion(
   }
 ): Promise<string> {
   const params = buildMessageParams(prompt, options);
+  const client = getClient();
   const response = await client.messages.create(params);
 
   // 提取文本：优先 text block，fallback 到 thinking block

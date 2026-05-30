@@ -39,4 +39,12 @@ describe("db connection", () => {
     const db2 = getDb();
     expect(db1).toBe(db2);
   });
+
+  it("getDb should initialize required tables without layout side effects", () => {
+    const db = getDb();
+    const result = db.prepare(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='users'"
+    ).all();
+    expect(result).toHaveLength(1);
+  });
 });

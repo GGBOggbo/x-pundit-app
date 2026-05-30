@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { parseTweets } from "@/lib/tweets/parseTweets";
 
 describe("tweet generate API validation", () => {
   it("should require at least 5 tweets", () => {

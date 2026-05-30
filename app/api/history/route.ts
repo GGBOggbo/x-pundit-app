@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
 
 // ========== DELETE 清空全部 ==========
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE() {
   try {
     const user = await requireAuth();
     const db = getDb();

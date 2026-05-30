@@ -94,9 +94,9 @@ describe("Persona type structure", () => {
 
   it("should NOT have tone/avoid/catchphrases fields", () => {
     for (const p of personas) {
-      expect((p as any).tone).toBeUndefined();
-      expect((p as any).avoid).toBeUndefined();
-      expect((p as any).catchphrases).toBeUndefined();
+      expect("tone" in p).toBe(false);
+      expect("avoid" in p).toBe(false);
+      expect("catchphrases" in p).toBe(false);
     }
   });
 });

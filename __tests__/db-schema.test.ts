@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { users, history } from "@/lib/db/schema";
-import { is } from "drizzle-orm";
+import fs from "node:fs";
+import path from "node:path";
 
 describe("db schema", () => {
   it("should export users table", () => {
@@ -30,8 +31,8 @@ describe("db schema", () => {
   it("users table should have unique email", () => {
     // drizzle schema 的 unique 约束在表级定义
     // 我们验证 schema 文件包含 .unique()
-    const schemaSource = require("fs").readFileSync(
-      require("path").resolve(__dirname, "../lib/db/schema.ts"),
+    const schemaSource = fs.readFileSync(
+      path.resolve(__dirname, "../lib/db/schema.ts"),
       "utf-8"
     );
     expect(schemaSource).toContain("unique()");

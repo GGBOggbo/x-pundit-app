@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { personas, getPersonaById } from "@/config/personas";
+import { personas } from "@/config/personas";
 import type { GeneratedComment } from "@/types";
 
 /**
@@ -71,13 +71,6 @@ describe("empty state content", () => {
 // ========== 4. 评论卡片结构测试 ==========
 
 describe("comment card data structure", () => {
-  const mockComment: GeneratedComment = {
-    text: "绷不住了，这不就是每次大版本更新先吹上天的经典剧情吗😅",
-    angle: "joke",
-    score: 88,
-    problems: [],
-  };
-
   it("should have angle label mapping for all angles", () => {
     const angleLabels: Record<string, string> = {
       agree: "赞同",
@@ -146,8 +139,6 @@ describe("step labels", () => {
 // ========== 7. 生成进度步骤测试 ==========
 
 describe("generation step progress", () => {
-  type Step = "idle" | "analyzing" | "generating" | "ranking" | "done";
-
   const stepLabels: Record<string, string> = {
     analyzing: "正在分析内容...",
     generating: "正在生成评论...",
@@ -224,7 +215,7 @@ describe("persona picker filter logic", () => {
   });
 
   it("filtering by '全部' should return all personas", () => {
-    const activeTag = "全部";
+    const activeTag: string = "全部";
     const filtered = mockPersonas.filter((p) => {
       const isProfessional = PROFESSIONAL_IDS.includes(p.id);
       return activeTag === "全部" ||
@@ -235,7 +226,7 @@ describe("persona picker filter logic", () => {
   });
 
   it("filtering by '专业' should return 户晨风 and 张雪峰", () => {
-    const activeTag = "专业";
+    const activeTag: string = "专业";
     const filtered = mockPersonas.filter((p) => {
       const isProfessional = PROFESSIONAL_IDS.includes(p.id);
       return activeTag === "全部" ||
@@ -247,7 +238,7 @@ describe("persona picker filter logic", () => {
   });
 
   it("filtering by '网友' should return all except professionals", () => {
-    const activeTag = "网友";
+    const activeTag: string = "网友";
     const filtered = mockPersonas.filter((p) => {
       const isProfessional = PROFESSIONAL_IDS.includes(p.id);
       return activeTag === "全部" ||

@@ -1,14 +1,14 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useReducer, useRef } from "react";
 import { personas } from "@/config/personas";
 import type {
   TweetGenerateResponse,
-  GeneratedTweet,
   StyleProfile,
 } from "@/types/tweet";
 import type { RefineRecord } from "@/types";
-import { parseTweets, detectLanguage } from "@/lib/tweets/parseTweets";
+import { parseTweets } from "@/lib/tweets/parseTweets";
 import PersonaPickerModal from "../components/PersonaPickerModal";
 import ThemeToggle from "../components/ThemeToggle";
 import TweetCard from "../components/TweetCard";
@@ -275,15 +275,41 @@ export default function GenerateTweetsPage() {
         </div>
         <div className="header-right">
           <ThemeToggle />
-          <a
+          <Link
             href="/"
             className="btn-ghost"
             style={{ textDecoration: "none" }}
           >
             ← 回到评论生成
-          </a>
+          </Link>
         </div>
       </header>
+
+      <section className="workspace-hero workspace-hero-tweet">
+        <div className="workspace-hero-copy">
+          <span className="workspace-eyebrow">Tweet Writing Studio</span>
+          <h2>先学习你的历史表达，再生成像你本人会发的原创推文</h2>
+          <p>
+            历史内容负责底色，人格负责调味，最后输出像你自己、但更适合直接发布的新内容。
+            先理解你的写法，再帮助你更稳定地持续产出。
+          </p>
+          <div className="workspace-chip-row">
+            <span className="workspace-chip">历史内容学习</span>
+            <span className="workspace-chip">风格画像提炼</span>
+            <span className="workspace-chip">原创推文输出</span>
+          </div>
+        </div>
+        <div className="workspace-hero-side">
+          <div className="workspace-stat">
+            <strong>最低样本</strong>
+            <span>至少 5 条，建议 10 条以上</span>
+          </div>
+          <div className="workspace-stat">
+            <strong>工作方式</strong>
+            <span>学习表达 → 建立风格画像 → 生成推文</span>
+          </div>
+        </div>
+      </section>
 
       {/* MAIN */}
       <div className="main">
@@ -293,7 +319,10 @@ export default function GenerateTweetsPage() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 1</span>
-              <span className="step-name">选择你的历史内容</span>
+              <span className="step-name">准备你的历史表达样本</span>
+            </div>
+            <div className="section-helper">
+              最少 5 条，建议 10 条以上。内容越能代表你平时的发帖风格，生成结果越像你本人。
             </div>
 
             {sourcesLoading ? (
@@ -303,10 +332,14 @@ export default function GenerateTweetsPage() {
             ) : sources.length > 0 ? (
               <>
                 {/* 全选按钮 */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-                  <span style={{ fontSize: 13, color: "var(--text-muted)" }}>
-                    已选 {selectedSources.size} / {sources.length} 条
-                  </span>
+                <div className="source-prep-header">
+                  <div>
+                    <strong>历史表达样本</strong>
+                    <span>先挑最能代表你语气、节奏和表达习惯的内容</span>
+                  </div>
+                  <span className="source-prep-count">已选 {selectedSources.size} / {sources.length}</span>
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 12 }}>
                   <button className="btn-mini" onClick={toggleAllSources}>
                     {selectedSources.size === sources.length ? "取消全选" : "全选"}
                   </button>
@@ -353,7 +386,7 @@ export default function GenerateTweetsPage() {
               <>
                 {/* 无历史，fallback 到手动粘贴 */}
                 <div style={{ fontSize: 13, color: "var(--text-muted)", marginBottom: 8 }}>
-                  暂无历史记录，请手动粘贴你的推文
+                  暂无历史记录，请手动粘贴你发过的推文或短内容
                 </div>
                 <textarea
                   value={rawInput}
@@ -371,7 +404,10 @@ export default function GenerateTweetsPage() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 2</span>
-              <span className="step-name">选择叠加人格</span>
+              <span className="step-name">选择想叠加的表达口吻</span>
+            </div>
+            <div className="section-helper">
+              你的历史风格是底色，人格只是“调味”。如果两者冲突，系统会优先保留你的原始表达习惯。
             </div>
             {selectedPersona && (
               <div
@@ -404,7 +440,17 @@ export default function GenerateTweetsPage() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 3</span>
-              <span className="step-name">生成设置</span>
+              <span className="step-name">确认生成方向</span>
+            </div>
+            <div className="task-launch-bar">
+              <div className="task-launch-meta">
+                <span>有效样本：{validCount} 条</span>
+                <span>输出：{count} 条</span>
+                <span>语言：{language === "auto" ? "自动" : language}</span>
+              </div>
+              <div className="task-launch-note">
+                {loading ? "风格工作流运行中，可随时取消" : "样本准备完成后，即可启动本次推文工作流"}
+              </div>
             </div>
             <div className="settings-row">
               <div>
@@ -463,7 +509,7 @@ export default function GenerateTweetsPage() {
                 ? genState.styleMessage || "生成中..."
                 : validCount < 5
                   ? "至少需要 5 条内容（勾选历史或手动粘贴）"
-                  : `将使用 ${validCount} 条内容分析风格`}
+                  : `将使用 ${validCount} 条内容先分析风格，再生成原创推文`}
             </div>
           </div>
         </div>
@@ -471,7 +517,12 @@ export default function GenerateTweetsPage() {
         {/* RIGHT PANEL */}
         <div className="right-panel">
           <div className="card">
-            <div className="panel-title">✨ 生成结果预览</div>
+            <div className="result-stage">
+              <div className="result-stage-header">
+                <span className="result-stage-kicker">写作画像与输出</span>
+                <h3>先确认风格像不像你，再挑最顺手的一条继续完善</h3>
+              </div>
+            </div>
 
             {!result && !loading && <TweetEmptyState />}
             {loading && (
@@ -484,7 +535,6 @@ export default function GenerateTweetsPage() {
               <TweetResultPanel
                 result={result}
                 personaName={selectedPersona!.name}
-                personaEmoji={selectedPersona!.emoji}
                 personaId={personaId}
                 styleProfile={result.styleProfile}
                 copiedIndex={copiedIndex}
@@ -552,7 +602,10 @@ function TweetEmptyState() {
     <div className="empty-wrap">
       <div className="empty-icon">✍️</div>
       <div className="empty-desc">
-        粘贴你的历史推文后，AI 会学习你的写作风格，生成像你本人发的原创推文
+        系统会先学习你的历史表达方式，再结合这次的人格方向，生成更像你本人会发的原创推文。
+      </div>
+      <div className="empty-highlight">
+        适合想保持个人风格，但又不想每次都从零起草内容的时候。
       </div>
       <div className="feature-grid">
         <div className="feature-item">
@@ -609,6 +662,9 @@ function TweetLoadingState({
       <div className="empty-desc">
         {message || "AI 正在工作中..."}
       </div>
+      <div className="loading-caption">
+        这一步会先提取你的语调和表达习惯，再生成新的候选推文。
+      </div>
       <div className="loading-steps">
         {steps.map((s) => (
           <span
@@ -627,7 +683,6 @@ function TweetLoadingState({
 function TweetResultPanel({
   result,
   personaName,
-  personaEmoji,
   personaId,
   styleProfile,
   copiedIndex,
@@ -637,7 +692,6 @@ function TweetResultPanel({
 }: {
   result: TweetGenerateResponse;
   personaName: string;
-  personaEmoji: string;
   personaId: string;
   styleProfile: StyleProfile;
   copiedIndex: number | null;
@@ -648,6 +702,13 @@ function TweetResultPanel({
   return (
     <>
       {/* 风格画像摘要 */}
+      <div className="result-intro">
+        <div>
+          <h3>已生成 {result.tweets.length} 条候选推文</h3>
+          <p>先看风格画像是否像你，再从结果里挑最顺手的一条继续润色或直接复制。</p>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 20 }}>
         <h3 className="analysis-heading">🎨 你的写作风格</h3>
         <div className="analysis-grid">

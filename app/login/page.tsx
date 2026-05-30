@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
@@ -49,9 +50,10 @@ export default function LoginPage() {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <div className="auth-brand-text">
-            <h1 className="auth-title">欢迎回来</h1>
-            <p className="auth-subtitle">登录你的 X Pundit 账号，继续生成精彩评论</p>
+          <div className="auth-brand-text auth-hero">
+            <span className="auth-kicker">Workspace Access</span>
+            <h1 className="auth-title">回到你的评论与推文工作台</h1>
+            <p className="auth-subtitle">登录后继续生成、润色和回看你之前的输出结果。</p>
           </div>
         </div>
 
@@ -105,16 +107,16 @@ export default function LoginPage() {
           <span>还没有账号？</span>
         </div>
 
-        <a href="/register" className="auth-alt-btn">
+        <Link href="/register" className="auth-alt-btn">
           创建新账号
-        </a>
+        </Link>
 
-        <a href="/" className="auth-back-home">
+        <Link href="/" className="auth-back-home">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
           返回首页
-        </a>
+        </Link>
       </div>
     </div>
   );

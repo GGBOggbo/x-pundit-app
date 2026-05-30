@@ -1,5 +1,4 @@
 import { auth } from "@/lib/auth";
-import { getDb } from "@/lib/db/index";
 
 export interface AuthUser {
   id: string;

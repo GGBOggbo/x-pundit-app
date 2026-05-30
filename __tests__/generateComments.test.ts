@@ -1,21 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
-import type { ContentAnalysis, GeneratedComment } from "@/types";
+import { describe, it, expect } from "vitest";
+import type { GeneratedComment } from "@/types";
 
 // 测试 validateAngle 逻辑（通过导出的函数间接测试）
 // 由于 generateComments 依赖 AI client，我们测试其内部校验逻辑
 // 通过 mock 来验证数据流
 
 describe("comment generation data flow", () => {
-  const mockAnalysis: ContentAnalysis = {
-    topic: "科技",
-    coreOpinion: "AI正在改变世界",
-    sentiment: "positive",
-    keyEntities: ["OpenAI"],
-    debatePoints: ["AI是否会取代人类"],
-    emotionalHooks: ["对未来的期待"],
-    funPoints: ["AI写评论自己评自己"],
-  };
-
   it("should filter out empty text comments", () => {
     const rawComments = [
       { text: "好的评论", angle: "agree" },

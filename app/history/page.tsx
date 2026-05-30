@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
+import { useState, useEffect } from "react";
 import type { HistoryItem } from "@/types";
 import {
   fetchHistoryList,
@@ -17,27 +18,32 @@ export default function HistoryPage() {
   const [authed, setAuthed] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
 
-  const loadHistory = useCallback(async (pageNum: number) => {
-    try {
-      const data = await fetchHistoryList(pageNum, 20);
-      if (pageNum === 1) {
-        setItems(data.items);
-      } else {
-        setItems((prev) => [...prev, ...data.items]);
-      }
-      setTotal(data.total);
-      setHasMore(data.hasMore);
-    } catch {
-      // 401 表示未登录
-      setAuthed(false);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
   useEffect(() => {
-    loadHistory(1);
-  }, [loadHistory]);
+    let cancelled = false;
+
+    async function run() {
+      try {
+        const data = await fetchHistoryList(1, 20);
+        if (cancelled) return;
+        setItems(data.items);
+        setTotal(data.total);
+        setHasMore(data.hasMore);
+      } catch {
+        if (cancelled) return;
+        setAuthed(false);
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    }
+
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // 未登录跳转
   useEffect(() => {
@@ -62,7 +68,12 @@ export default function HistoryPage() {
   const handleLoadMore = () => {
     const nextPage = page + 1;
     setPage(nextPage);
-    loadHistory(nextPage);
+    void (async () => {
+      const data = await fetchHistoryList(nextPage, 20);
+      setItems((prev) => [...prev, ...data.items]);
+      setTotal(data.total);
+      setHasMore(data.hasMore);
+    })();
   };
 
   if (loading) {
@@ -75,13 +86,20 @@ export default function HistoryPage() {
 
   return (
     <div className="page">
+      <section className="history-stage">
+        <div className="history-stage-copy">
+          <span className="history-stage-kicker">Output Archive</span>
+          <h1 className="history-title">你的评论资产与生成记录</h1>
+          <p>这里保留你生成过的内容，方便回看、复制和继续整理。</p>
+        </div>
+      </section>
+
       {/* Header */}
       <header className="history-header">
         <div className="history-header-left">
-          <a href="/" className="history-back">
-            ← 返回
-          </a>
-          <h1 className="history-title">📋 历史记录</h1>
+          <Link href="/" className="history-back">
+            ← 返回工作台
+          </Link>
           {total > 0 && (
             <span className="history-count">共 {total} 条</span>
           )}
@@ -121,9 +139,9 @@ export default function HistoryPage() {
         <div className="history-empty">
           <div className="empty-icon">📦</div>
           <p className="empty-desc">还没有生成记录</p>
-          <a href="/" className="btn-primary">
+          <Link href="/" className="btn-primary">
             去试试 →
-          </a>
+          </Link>
         </div>
       ) : (
         <>
@@ -191,6 +209,9 @@ function HistoryCard({
         className="history-card-summary"
         onClick={() => setExpanded(!expanded)}
       >
+        <div className="history-stage-copy">
+          <span className="history-stage-kicker">Saved Output</span>
+        </div>
         <div className="history-card-meta">
           <span className="history-time">{relativeTime(item.createdAt)}</span>
           <span className="dot" />

@@ -4,6 +4,7 @@ import { getPersonaById } from "@/config/personas";
 import { analyzeContent } from "@/lib/ai/analyzeContent";
 import { generateComments } from "@/lib/ai/generateComments";
 import { rankAndPolishComments } from "@/lib/ai/rankAndPolish";
+import { checkRateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
   let body: GenerateRequest;
@@ -16,6 +17,25 @@ export async function POST(req: NextRequest) {
   if (!body.content?.trim()) {
     return NextResponse.json(
       { error: "content 不能为空" },
+      { status: 400 }
+    );
+  }
+
+  const ip =
+    req.headers.get("x-forwarded-for") ||
+    req.headers.get("x-real-ip") ||
+    "unknown";
+
+  if (!checkRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "请求过于频繁，请稍后再试" },
+      { status: 429 }
+    );
+  }
+
+  if (body.content.length > 5000) {
+    return NextResponse.json(
+      { error: "content 不能超过 5000 字" },
       { status: 400 }
     );
   }

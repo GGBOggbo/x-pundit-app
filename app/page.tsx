@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect, useReducer, useRef } from "react";
 import { personas } from "@/config/personas";
-import type { GenerateResponse, GeneratedComment, RefineRecord } from "@/types";
+import type { GenerateResponse, RefineRecord } from "@/types";
 import { createHistoryItem, getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
 import PersonaPickerModal from "./components/PersonaPickerModal";
 import ThemeToggle from "./components/ThemeToggle";
@@ -235,14 +236,14 @@ export default function Home() {
         </div>
         <div className="header-right">
           <ThemeToggle />
-          <a href="/generate-tweets" className="btn-ghost" style={{ textDecoration: "none" }}>
+          <Link href="/generate-tweets" className="btn-ghost" style={{ textDecoration: "none" }}>
             ✍️ 推文生成
-          </a>
+          </Link>
           {session ? (
             <>
-              <a href="/history" className="btn-ghost" style={{ textDecoration: "none" }}>
+              <Link href="/history" className="btn-ghost" style={{ textDecoration: "none" }}>
                 📋 历史记录
-              </a>
+              </Link>
               <button
                 className="btn-primary"
                 onClick={() => {
@@ -263,13 +264,39 @@ export default function Home() {
               >
                 📋 历史记录
               </button>
-              <a href="/login" className="btn-primary" style={{ textDecoration: "none" }}>
+              <Link href="/login" className="btn-primary" style={{ textDecoration: "none" }}>
                 🔑 登录
-              </a>
+              </Link>
             </>
           )}
         </div>
       </header>
+
+      <section className="workspace-hero workspace-hero-comment">
+        <div className="workspace-hero-copy">
+          <span className="workspace-eyebrow">X Comments Studio</span>
+          <h2>把普通回复升级成更像真人、更值得发出的评论草案</h2>
+          <p>
+            输入一条内容，系统会先判断语境，再按你的表达方向生成一组可直接发出的候选评论。
+            它更像一个评论工作台，而不只是一次性生成器。
+          </p>
+          <div className="workspace-chip-row">
+            <span className="workspace-chip">热点跟评</span>
+            <span className="workspace-chip">观点回复</span>
+            <span className="workspace-chip">产品讨论</span>
+          </div>
+        </div>
+        <div className="workspace-hero-side">
+          <div className="workspace-stat">
+            <strong>3 段流程</strong>
+            <span>分析内容 → 生成评论 → 排序挑选</span>
+          </div>
+          <div className="workspace-stat">
+            <strong>最适合</strong>
+            <span>你知道想参与讨论，但还没想好怎么回的时候</span>
+          </div>
+        </div>
+      </section>
 
       {/* ══ MAIN ══ */}
       <div className="main">
@@ -279,7 +306,10 @@ export default function Home() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 1</span>
-              <span className="step-name">粘贴推文内容</span>
+              <span className="step-name">输入你要回复的内容</span>
+            </div>
+            <div className="section-helper">
+              粘贴一条推文、长文观点，或者任何你想参与讨论的内容。越具体，生成结果越稳。
             </div>
             <textarea
               value={content}
@@ -305,7 +335,10 @@ export default function Home() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 2</span>
-              <span className="step-name">选择评论人格</span>
+              <span className="step-name">选择这次想用的评论口吻</span>
+            </div>
+            <div className="section-helper">
+              人格决定“味道”，不是决定立场。你可以把它理解成这次回复时的表达滤镜。
             </div>
             {selectedPersona && (
               <div
@@ -332,7 +365,17 @@ export default function Home() {
           <div className="card">
             <div className="step-row">
               <span className="step-badge">STEP 3</span>
-              <span className="step-name">生成设置</span>
+              <span className="step-name">确认输出数量和语言</span>
+            </div>
+            <div className="task-launch-bar">
+              <div className="task-launch-meta">
+                <span>当前人格：{selectedPersona?.name || "未选择"}</span>
+                <span>输出：{count} 条</span>
+                <span>语言：{language === "auto" ? "自动" : language}</span>
+              </div>
+              <div className="task-launch-note">
+                {loading ? "工作流正在运行中，可随时取消" : "准备完成后即可启动本次评论工作流"}
+              </div>
             </div>
             <div className="settings-row">
               <div>
@@ -374,7 +417,7 @@ export default function Home() {
               {loading ? "⏹ 取消生成" : `🚀 生成 ${count} 条真人感评论`}
             </button>
             <div className="gen-note">
-              {loading ? "生成中，点击可取消" : "预计消耗 1 次生成额度"}
+              {loading ? "正在连续生成中，点击可随时取消" : "每次生成都会走：分析内容 → 生成评论 → 热度排序"}
             </div>
           </div>
         </div>
@@ -382,7 +425,12 @@ export default function Home() {
         {/* ── RIGHT PANEL ── */}
         <div className="right-panel">
           <div className="card">
-            <div className="panel-title">✨ 生成结果预览</div>
+            <div className="result-stage">
+              <div className="result-stage-header">
+                <span className="result-stage-kicker">AI 输出区</span>
+                <h3>先看推荐，再决定复制、润色，还是换一批</h3>
+              </div>
+            </div>
 
             {!result && !loading && <EmptyState />}
             {loading && <LoadingState step={genState.step} />}
@@ -390,7 +438,6 @@ export default function Home() {
               <ResultPanel
                 result={result}
                 personaName={resultPersona.name}
-                personaEmoji={resultPersona.emoji}
                 personaId={personaId}
                 originalContent={content}
                 copiedIndex={copiedIndex}
@@ -413,7 +460,10 @@ function EmptyState() {
       <div className="empty-wrap">
         <div className="empty-icon">📦</div>
         <div className="empty-desc">
-          粘贴推文后，我会帮你生成多角度、低 AI 味、高互动感的评论
+          输入原文后，你会先拿到内容分析，再拿到一批不同角度、能直接复制使用的评论。
+        </div>
+        <div className="empty-highlight">
+          最适合你已经知道“想参与讨论”，但还没想好“具体怎么回”的时候。
         </div>
         <div className="feature-grid">
           {features.map((f) => (
@@ -465,6 +515,9 @@ function LoadingState({ step }: { step: string }) {
     <div className="empty-wrap">
       <div className="empty-icon" style={{ fontSize: 32 }}>{current.icon}</div>
       <div className="empty-desc">{current.text}</div>
+      <div className="loading-caption">
+        系统会先理解原文语境，再生成候选评论，最后把更值得发的内容排在前面。
+      </div>
       <div className="loading-steps">
         {steps.map((s) => (
           <span
@@ -483,7 +536,6 @@ function LoadingState({ step }: { step: string }) {
 function ResultPanel({
   result,
   personaName,
-  personaEmoji,
   personaId,
   originalContent,
   copiedIndex,
@@ -493,7 +545,6 @@ function ResultPanel({
 }: {
   result: GenerateResponse;
   personaName: string;
-  personaEmoji: string;
   personaId: string;
   originalContent: string;
   copiedIndex: number | null;
@@ -504,6 +555,13 @@ function ResultPanel({
   return (
     <>
       {/* 内容分析 */}
+      <div className="result-intro">
+        <div>
+          <h3>已生成 {result.comments.length} 条候选评论</h3>
+          <p>建议先快速浏览热度高的几条，再决定复制、继续润色，还是直接换一批。</p>
+        </div>
+      </div>
+
       <div style={{ marginBottom: 20 }}>
         <h3 className="analysis-heading">
           📊 内容分析

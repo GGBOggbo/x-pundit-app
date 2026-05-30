@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { getLocalHistory, migrateLocalHistory, clearLocalHistory } from "@/lib/history";
@@ -66,9 +67,10 @@ export default function RegisterPage() {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </div>
-          <div className="auth-brand-text">
-            <h1 className="auth-title">创建账号</h1>
-            <p className="auth-subtitle">注册后可保存评论历史，随时回顾生成记录</p>
+          <div className="auth-brand-text auth-hero">
+            <span className="auth-kicker">Create Access</span>
+            <h1 className="auth-title">创建账号，保存你的输出资产</h1>
+            <p className="auth-subtitle">注册后可保留历史记录，在同一工作台里继续生成和整理内容。</p>
           </div>
         </div>
 
@@ -136,16 +138,16 @@ export default function RegisterPage() {
           <span>已有账号？</span>
         </div>
 
-        <a href="/login" className="auth-alt-btn">
+        <Link href="/login" className="auth-alt-btn">
           去登录
-        </a>
+        </Link>
 
-        <a href="/" className="auth-back-home">
+        <Link href="/" className="auth-back-home">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
           返回首页
-        </a>
+        </Link>
       </div>
     </div>
   );
